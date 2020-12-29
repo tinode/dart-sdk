@@ -1,0 +1,70 @@
+import 'dart:async';
+
+import 'package:get_it/get_it.dart';
+import 'package:tinode/src/models/future-callback.dart';
+import 'package:tinode/src/services/configuration.dart';
+import 'package:tinode/src/services/logger.dart';
+
+class FutureManager {
+  final Map<String, FeatureCallback> _pendingFutures = {};
+  Timer _expiredFuturesCheckerTimer;
+  ConfigService _configService;
+  LoggerService _loggerService;
+
+  FutureManager() {
+    _configService = GetIt.I.get<ConfigService>();
+    _loggerService = GetIt.I.get<LoggerService>();
+  }
+
+  Future<dynamic> makeFuture(String id) {
+    var completer = Completer();
+    if (id != null) {
+      _pendingFutures[id] = FeatureCallback(completer: completer, ts: DateTime.now());
+    }
+    return completer.future;
+  }
+
+  void execPromise(String id, int code, dynamic onOK, String errorText) {
+    var callbacks = _pendingFutures[id];
+
+    if (callbacks != null) {
+      _pendingFutures.remove(id);
+      if (code >= 200 && code < 400) {
+        callbacks.completer.complete(onOK);
+      } else {
+        callbacks.completer.completeError(Exception(errorText + ' (' + code.toString() + ')'));
+      }
+    }
+  }
+
+  void _checkExpiredFutures() {
+    var exception = Exception('Timeout (504)');
+    var expires = DateTime.now().subtract(Duration(milliseconds: _configService.appSettings.expireFuturesTimeout));
+
+    _pendingFutures.forEach((String key, FeatureCallback featureCB) {
+      if (key != null) {
+        if (featureCB.ts.isBefore(expires)) {
+          _loggerService.error('Promise expired ' + key.toString());
+          featureCB.completer.completeError(exception);
+          _pendingFutures.remove(key);
+        }
+      }
+    });
+  }
+
+  void startCheckingExpiredFutures() {
+    if (_expiredFuturesCheckerTimer != null && _expiredFuturesCheckerTimer.isActive) {
+      return;
+    }
+    _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: _configService.appSettings.expireFuturesPeriod), (_) {
+      _checkExpiredFutures();
+    });
+  }
+
+  void stopCheckingExpiredFutures() {
+    if (_expiredFuturesCheckerTimer != null) {
+      _expiredFuturesCheckerTimer.cancel();
+      _expiredFuturesCheckerTimer = null;
+    }
+  }
+}
