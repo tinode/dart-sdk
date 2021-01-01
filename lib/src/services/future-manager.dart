@@ -24,7 +24,7 @@ class FutureManager {
     return completer.future;
   }
 
-  void execPromise(String id, int code, dynamic onOK, String errorText) {
+  void execFuture(String id, int code, dynamic onOK, String errorText) {
     var callbacks = _pendingFutures[id];
 
     if (callbacks != null) {

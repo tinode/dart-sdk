@@ -26,6 +26,12 @@ class TinodeService {
     _configService = GetIt.I.get<ConfigService>();
   }
 
+  void handleCtrlMessage(dynamic packet) {}
+  void handleMetaMessage(dynamic packet) {}
+  void handleDataMessage(dynamic packet) {}
+  void handlePresMessage(dynamic packet) {}
+  void handleInfoMessage(dynamic packet) {}
+
   Future<dynamic> _send(Packet pkt) {
     Future future;
 
@@ -41,7 +47,7 @@ class TinodeService {
     } catch (e) {
       if (pkt.id != null) {
         print(e);
-        _futureManager.execPromise(pkt.id, _configService.appSettings.networkError, null, 'Error');
+        _futureManager.execFuture(pkt.id, _configService.appSettings.networkError, null, 'Error');
       } else {
         rethrow;
       }

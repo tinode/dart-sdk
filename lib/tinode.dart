@@ -1,6 +1,7 @@
 library tinode;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/connection-options.dart';
@@ -12,6 +13,7 @@ import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/services/tinode.dart';
 
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/services/tools.dart';
 
 export 'src/models/connection-options.dart';
 export 'src/models/configuration.dart';
@@ -25,7 +27,11 @@ class Tinode {
   StreamSubscription _onMessageSubscription;
   StreamSubscription _onConnectedSubscription;
 
+  // Event
   PublishSubject<void> onConnected = PublishSubject<void>();
+  PublishSubject<void> onNetworkProbe = PublishSubject<void>();
+  PublishSubject<dynamic> onMessage = PublishSubject<dynamic>();
+  PublishSubject<String> onRawMessage = PublishSubject<String>();
 
   Tinode(String appName, ConnectionOptions options, bool loggerEnabled) {
     _registerDependencies(options, loggerEnabled);
@@ -60,6 +66,8 @@ class Tinode {
     _onConnectedSubscription ??= _connectionService.onOpen.listen((_) {
       hello();
     });
+
+    _futureManager.startCheckingExpiredFutures();
   }
 
   void _unsubscribeAll() {
@@ -67,27 +75,53 @@ class Tinode {
     _onMessageSubscription = null;
     _onConnectedSubscription.cancel();
     _onConnectedSubscription = null;
+    _futureManager.stopCheckingExpiredFutures();
   }
 
   void _onConnectionMessage(String input) {
     if (input == null || input == '') {
       return;
     }
-
     _loggerService.log('in: ' + input);
+
+    // Send raw message to listener
+    onRawMessage.add(input);
+
+    if (input == '0') {
+      onNetworkProbe.add(null);
+    }
+
+    var pkt = jsonDecode(input, reviver: Tools.jsonParserHelper);
+    if (pkt == null) {
+      _loggerService.error('failed to parse data');
+      return;
+    }
+
+    // Send complete packet to listener
+    onMessage.add(pkt);
+
+    if (pkt['ctrl'] != null) {
+      _tinodeService.handleCtrlMessage(pkt);
+    } else if (pkt['meta'] != null) {
+      _tinodeService.handleMetaMessage(pkt);
+    } else if (pkt['data'] != null) {
+      _tinodeService.handleDataMessage(pkt);
+    } else if (pkt['pres'] != null) {
+      _tinodeService.handlePresMessage(pkt);
+    } else if (pkt['info'] != null) {
+      _tinodeService.handleInfoMessage(pkt);
+    }
   }
 
   /// Open the connection
   Future connect() {
     _doSubscriptions();
-    _futureManager.startCheckingExpiredFutures();
     return _connectionService.connect();
   }
 
   /// Close the current connection
   void disconnect() {
     _unsubscribeAll();
-    _futureManager.stopCheckingExpiredFutures();
     _connectionService.disconnect();
   }
 
