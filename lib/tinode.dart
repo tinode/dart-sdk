@@ -4,22 +4,22 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/services/logger.dart';
+import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/models/account-params.dart';
-import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
-import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/services/future-manager.dart';
-import 'package:tinode/src/services/logger.dart';
+import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
-import 'package:tinode/src/services/tinode.dart';
 
 import 'package:get_it/get_it.dart';
-import 'package:tinode/src/services/tools.dart';
 import 'package:tinode/src/topic.dart';
+import 'package:tinode/src/services/tools.dart';
 
-export 'src/models/connection-options.dart';
 export 'src/models/configuration.dart';
+export 'src/models/connection-options.dart';
 
 class Tinode {
   CacheManager _cacheManager;

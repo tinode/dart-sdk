@@ -1,7 +1,7 @@
-import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
 import 'package:tinode/src/models/packet.dart';
-import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/packet-data.dart';
+import 'package:tinode/src/services/configuration.dart';
+import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
 
 import 'package:get_it/get_it.dart';
 import 'package:tinode/src/services/tools.dart';

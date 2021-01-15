@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/account-params.dart';
-import 'package:tinode/src/models/packet-data.dart';
 import 'package:tinode/src/models/packet.dart';
-import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/logger.dart';
+import 'package:tinode/src/models/packet-data.dart';
 import 'package:tinode/src/services/connection.dart';
+import 'package:tinode/src/models/account-params.dart';
+import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/future-manager.dart';
 import 'package:tinode/src/services/packet-generator.dart';
