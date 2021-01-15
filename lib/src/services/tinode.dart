@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/packet.dart';
+import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/services/configuration.dart';
@@ -9,6 +11,7 @@ import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
 
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/topic.dart';
 
 /// This class contains basic functionality and logic to
 class TinodeService {
@@ -17,6 +20,14 @@ class TinodeService {
   FutureManager _futureManager;
   LoggerService _loggerService;
   ConfigService _configService;
+  CacheManager _cacheManager;
+
+  // Events
+  PublishSubject<dynamic> onCtrlMessage = PublishSubject<dynamic>();
+  PublishSubject<dynamic> onMetaMessage = PublishSubject<dynamic>();
+  PublishSubject<dynamic> onDataMessage = PublishSubject<dynamic>();
+  PublishSubject<dynamic> onPresMessage = PublishSubject<dynamic>();
+  PublishSubject<dynamic> onInfoMessage = PublishSubject<dynamic>();
 
   TinodeService() {
     _connectionService = GetIt.I.get<ConnectionService>();
@@ -24,13 +35,81 @@ class TinodeService {
     _futureManager = GetIt.I.get<FutureManager>();
     _loggerService = GetIt.I.get<LoggerService>();
     _configService = GetIt.I.get<ConfigService>();
+    _cacheManager = GetIt.I.get<CacheManager>();
   }
 
-  void handleCtrlMessage(dynamic packet) {}
-  void handleMetaMessage(dynamic packet) {}
-  void handleDataMessage(dynamic packet) {}
-  void handlePresMessage(dynamic packet) {}
-  void handleInfoMessage(dynamic packet) {}
+  void handleCtrlMessage(dynamic packet) {
+    var ctrl = packet['ctrl'];
+    onCtrlMessage.add(ctrl);
+
+    if (ctrl['id'] != null && ctrl['id'] != 0) {
+      _futureManager.execFuture(ctrl['id'], ctrl['code'], ctrl, ctrl['text']);
+    }
+
+    if (ctrl['code'] == 205 && ctrl['text'] == 'evicted') {
+      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      if (topic != null) {
+        topic.resetSub();
+      }
+    }
+
+    if (ctrl['params'] != null && ctrl['params']['what'] == 'data') {
+      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      if (topic != null) {
+        topic.allMessagesReceived(ctrl['params']['count']);
+      }
+    }
+
+    if (ctrl['params'] != null && ctrl['params']['what'] == 'sub') {
+      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      if (topic != null) {
+        topic.processMetaSub([]);
+      }
+    }
+  }
+
+  void handleMetaMessage(dynamic packet) {
+    var meta = packet['meta'];
+    onMetaMessage.add(meta);
+
+    Topic topic = _cacheManager.cacheGet('topic', meta['topic']);
+    if (topic != null) {
+      topic.routeMeta(meta);
+    }
+
+    if (meta['id'] != null) {
+      _futureManager.execFuture(meta['id'], 200, meta, 'META');
+    }
+  }
+
+  void handleDataMessage(dynamic packet) {
+    var data = packet['data'];
+    onDataMessage.add(data);
+
+    Topic topic = _cacheManager.cacheGet('topic', data['topic']);
+    if (topic != null) {
+      topic.routeMeta(data);
+    }
+  }
+
+  void handlePresMessage(dynamic packet) {
+    var pres = packet['pres'];
+    onPresMessage.add(pres);
+
+    Topic topic = _cacheManager.cacheGet('topic', pres['topic']);
+    if (topic != null) {
+      topic.routePres(pres);
+    }
+  }
+
+  void handleInfoMessage(dynamic packet) {
+    var info = packet['info'];
+
+    Topic topic = _cacheManager.cacheGet('topic', info['topic']);
+    if (topic != null) {
+      topic.routeInfo(info);
+    }
+  }
 
   Future<dynamic> _send(Packet pkt) {
     Future future;

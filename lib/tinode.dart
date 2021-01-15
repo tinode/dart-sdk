@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/connection-options.dart';
+import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/services/future-manager.dart';
@@ -47,6 +48,7 @@ class Tinode {
     GetIt.I.registerSingleton<ConnectionService>(ConnectionService(options));
     GetIt.I.registerSingleton<FutureManager>(FutureManager());
     GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
+    GetIt.I.registerSingleton<CacheManager>(CacheManager());
     GetIt.I.registerSingleton<TinodeService>(TinodeService());
   }
 
