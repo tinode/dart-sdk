@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/account-params.dart';
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
@@ -15,11 +16,13 @@ import 'package:tinode/src/services/tinode.dart';
 
 import 'package:get_it/get_it.dart';
 import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/topic.dart';
 
 export 'src/models/connection-options.dart';
 export 'src/models/configuration.dart';
 
 class Tinode {
+  CacheManager _cacheManager;
   ConfigService _configService;
   TinodeService _tinodeService;
   FutureManager _futureManager;
@@ -27,12 +30,16 @@ class Tinode {
   ConnectionService _connectionService;
   StreamSubscription _onMessageSubscription;
   StreamSubscription _onConnectedSubscription;
+  StreamSubscription _onDisconnectedSubscription;
 
   // Event
   PublishSubject<void> onConnected = PublishSubject<void>();
+  PublishSubject<void> onDisconnect = PublishSubject<void>();
   PublishSubject<void> onNetworkProbe = PublishSubject<void>();
   PublishSubject<dynamic> onMessage = PublishSubject<dynamic>();
   PublishSubject<String> onRawMessage = PublishSubject<String>();
+
+  bool _authenticated = false;
 
   Tinode(String appName, ConnectionOptions options, bool loggerEnabled) {
     _registerDependencies(options, loggerEnabled);
@@ -58,6 +65,7 @@ class Tinode {
     _futureManager = GetIt.I.get<FutureManager>();
     _loggerService = GetIt.I.get<LoggerService>();
     _connectionService = GetIt.I.get<ConnectionService>();
+    _cacheManager = GetIt.I.get<CacheManager>();
   }
 
   void _doSubscriptions() {
@@ -69,6 +77,10 @@ class Tinode {
       hello();
     });
 
+    _onDisconnectedSubscription ??= _connectionService.onDisconnect.listen((_) {
+      _onConnectionDisconnect();
+    });
+
     _futureManager.startCheckingExpiredFutures();
   }
 
@@ -78,6 +90,18 @@ class Tinode {
     _onConnectedSubscription.cancel();
     _onConnectedSubscription = null;
     _futureManager.stopCheckingExpiredFutures();
+  }
+
+  void _onConnectionDisconnect() {
+    _unsubscribeAll();
+    _futureManager.rejectAllFutures(0, 'disconnect');
+    _cacheManager.map((String key, dynamic value) {
+      if (key.contains('topic:')) {
+        Topic topic = value;
+        topic.resetSub();
+      }
+    });
+    onDisconnect.add(null);
   }
 
   void _onConnectionMessage(String input) {
@@ -115,6 +139,10 @@ class Tinode {
     }
   }
 
+  String get version {
+    return _configService.appVersion;
+  }
+
   /// Open the connection
   Future connect() {
     _doSubscriptions();
@@ -123,7 +151,6 @@ class Tinode {
 
   /// Close the current connection
   void disconnect() {
-    _unsubscribeAll();
     _connectionService.disconnect();
   }
 
@@ -137,6 +164,10 @@ class Tinode {
     _configService.loggerEnabled = enabled;
   }
 
+  bool get isAuthenticated {
+    return _authenticated;
+  }
+
   /// Say hello and set some initial configuration like:
   /// * User agent
   /// * Device token for notifications
@@ -144,5 +175,10 @@ class Tinode {
   /// * Platform
   Future hello() {
     return _tinodeService.hello();
+  }
+
+  /// Create or update an account
+  Future account(String userId, String scheme, String secret, bool login, AccountParams params) {
+    return _tinodeService.account(userId, scheme, secret, login, params);
   }
 }

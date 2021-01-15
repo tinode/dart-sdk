@@ -61,6 +61,14 @@ class FutureManager {
     });
   }
 
+  void rejectAllFutures(int code, String reason) {
+    _pendingFutures.forEach((String key, FeatureCallback cb) {
+      if (cb != null) {
+        cb.completer.completeError(reason);
+      }
+    });
+  }
+
   void stopCheckingExpiredFutures() {
     if (_expiredFuturesCheckerTimer != null) {
       _expiredFuturesCheckerTimer.cancel();

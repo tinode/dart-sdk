@@ -30,14 +30,14 @@ class HiPacketData extends PacketData {
 }
 
 class AccPacketData extends PacketData {
-  final String user;
-  final String scheme;
-  final String secret;
-  final bool login;
-  final List<String> tags;
-  final dynamic desc;
-  final dynamic cred;
-  final String token;
+  String user;
+  String scheme;
+  String secret;
+  bool login;
+  List<String> tags;
+  Map<String, dynamic> desc;
+  dynamic cred;
+  String token;
 
   AccPacketData({this.user, this.scheme, this.secret, this.login, this.tags, this.desc, this.cred, this.token});
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/account-params.dart';
+import 'package:tinode/src/models/packet-data.dart';
 import 'package:tinode/src/models/packet.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/logger.dart';
@@ -136,6 +138,27 @@ class TinodeService {
 
   Future hello() {
     var packet = _packetGenerator.generate(PacketTypes.Hi, null);
+    return _send(packet);
+  }
+
+  Future account(String userId, String scheme, String secret, bool login, AccountParams params) {
+    var packet = _packetGenerator.generate(PacketTypes.Acc, null);
+    AccPacketData data = packet.data;
+    data.user = userId;
+    data.login = login;
+    data.scheme = scheme;
+    data.secret = secret;
+
+    if (params != null) {
+      data.tags = params.tags;
+      data.cred = params.cred;
+      data.token = params.token;
+
+      data.desc['defacs'] = params.defacs;
+      data.desc['public'] = params.public;
+      data.desc['private'] = params.private;
+    }
+    packet.data = data;
     return _send(packet);
   }
 }
