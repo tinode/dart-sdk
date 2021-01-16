@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/auth-token.dart';
+import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/services/connection.dart';
@@ -13,6 +15,7 @@ import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/future-manager.dart';
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
+import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 
 import 'package:get_it/get_it.dart';
 import 'package:tinode/src/topic.dart';
@@ -22,6 +25,7 @@ export 'src/models/configuration.dart';
 export 'src/models/connection-options.dart';
 
 class Tinode {
+  AuthService _authService;
   CacheManager _cacheManager;
   ConfigService _configService;
   TinodeService _tinodeService;
@@ -39,8 +43,6 @@ class Tinode {
   PublishSubject<dynamic> onMessage = PublishSubject<dynamic>();
   PublishSubject<String> onRawMessage = PublishSubject<String>();
 
-  bool _authenticated = false;
-
   Tinode(String appName, ConnectionOptions options, bool loggerEnabled) {
     _registerDependencies(options, loggerEnabled);
     _resolveDependencies();
@@ -56,6 +58,7 @@ class Tinode {
     GetIt.I.registerSingleton<FutureManager>(FutureManager());
     GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
     GetIt.I.registerSingleton<CacheManager>(CacheManager());
+    GetIt.I.registerSingleton<AuthService>(AuthService());
     GetIt.I.registerSingleton<TinodeService>(TinodeService());
   }
 
@@ -66,6 +69,7 @@ class Tinode {
     _loggerService = GetIt.I.get<LoggerService>();
     _connectionService = GetIt.I.get<ConnectionService>();
     _cacheManager = GetIt.I.get<CacheManager>();
+    _authService = GetIt.I.get<AuthService>();
   }
 
   void _doSubscriptions() {
@@ -164,8 +168,14 @@ class Tinode {
     _configService.loggerEnabled = enabled;
   }
 
+  /// Specifies if user is authenticated
   bool get isAuthenticated {
-    return _authenticated;
+    return _authService.isAuthenticated;
+  }
+
+  /// Current user token
+  AuthToken get token {
+    return _authService.authToken;
   }
 
   /// Say hello and set some initial configuration like:
@@ -178,7 +188,30 @@ class Tinode {
   }
 
   /// Create or update an account
+  ///
+  /// * Scheme can be `basic` or `token` or `reset`
   Future account(String userId, String scheme, String secret, bool login, AccountParams params) {
     return _tinodeService.account(userId, scheme, secret, login, params);
+  }
+
+  /// Create a new user. Wrapper for `account` method.
+  Future createAccount(String scheme, String secret, bool login, AccountParams params) {
+    var promise = account(TopicNames.USER_NEW, scheme, secret, login, params);
+    if (login) {
+      promise = promise.then((dynamic ctrl) {
+        _authService.onLoginSuccessful(ctrl);
+        return ctrl;
+      });
+    }
+    return promise;
+  }
+
+  /// Create user with 'basic' authentication scheme and immediately
+  /// use it for authentication. Wrapper for `createAccount`
+  Future createAccountBasic(String username, String password, bool login, AccountParams params) {
+    username ??= '';
+    username ??= '';
+    var secret = base64.encode(utf8.encode(username + ':' + password));
+    return createAccount('basic', secret, login, params);
   }
 }
