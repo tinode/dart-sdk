@@ -2,8 +2,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/auth-token.dart';
 
 class AuthService {
-  String _userId = null;
-  AuthToken _authToken = null;
+  String _userId;
+  AuthToken _authToken;
   bool _authenticated = false;
 
   PublishSubject<OnLoginData> onLogin = PublishSubject<OnLoginData>();
@@ -14,6 +14,10 @@ class AuthService {
 
   AuthToken get authToken {
     return _authToken;
+  }
+
+  String get userId {
+    return _userId;
   }
 
   void onLoginSuccessful(Map<String, dynamic> ctrl) {

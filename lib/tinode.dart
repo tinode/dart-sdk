@@ -178,6 +178,11 @@ class Tinode {
     return _authService.authToken;
   }
 
+  /// Current user id
+  String get userId {
+    return _authService.userId;
+  }
+
   /// Say hello and set some initial configuration like:
   /// * User agent
   /// * Device token for notifications
