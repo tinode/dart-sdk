@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/packet.dart';
+import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/models/packet-data.dart';
 import 'package:tinode/src/services/connection.dart';
@@ -23,6 +24,7 @@ class TinodeService {
   LoggerService _loggerService;
   ConfigService _configService;
   CacheManager _cacheManager;
+  AuthService _authService;
 
   // Events
   PublishSubject<dynamic> onCtrlMessage = PublishSubject<dynamic>();
@@ -38,6 +40,7 @@ class TinodeService {
     _loggerService = GetIt.I.get<LoggerService>();
     _configService = GetIt.I.get<ConfigService>();
     _cacheManager = GetIt.I.get<CacheManager>();
+    _authService = GetIt.I.get<AuthService>();
   }
 
   void handleCtrlMessage(dynamic packet) {
@@ -121,6 +124,11 @@ class TinodeService {
     }
     var formattedPkt = pkt.toMap();
     formattedPkt['id'] = pkt.id;
+    formattedPkt.keys
+        .where((k) => formattedPkt[k] == null || (formattedPkt[k] is Map && formattedPkt[k].isEmpty))
+        .toList()
+        .forEach(formattedPkt.remove);
+
     var json = jsonEncode({pkt.name: formattedPkt});
     try {
       _connectionService.sendText(json);
@@ -160,5 +168,18 @@ class TinodeService {
     }
     packet.data = data;
     return _send(packet);
+  }
+
+  Future login(String scheme, String secret, Map<String, dynamic> cred) async {
+    var packet = _packetGenerator.generate(PacketTypes.Login, null);
+    LoginPacketData data = packet.data;
+    data.scheme = scheme;
+    data.secret = secret;
+    data.cred = cred;
+    packet.data = data;
+
+    var ctrl = await _send(packet);
+    _authService.onLoginSuccessful(ctrl);
+    return ctrl;
   }
 }

@@ -1,3 +1,3 @@
-# dart-sdk
+# Tinode Dart SKD
 
-The future home of Dart SDK.
+The future home of dart sdk usable in dart and flutter projects.

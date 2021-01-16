@@ -3,6 +3,7 @@ import 'package:tinode/src/models/auth-token.dart';
 
 class AuthService {
   String _userId;
+  String _lastLogin;
   AuthToken _authToken;
   bool _authenticated = false;
 
@@ -20,6 +21,14 @@ class AuthService {
     return _userId;
   }
 
+  String get lastLogin {
+    return _lastLogin;
+  }
+
+  void setLastLogin(String lastLogin) {
+    _lastLogin = lastLogin;
+  }
+
   void onLoginSuccessful(Map<String, dynamic> ctrl) {
     var params = ctrl['params'];
     if (params == null || params['user'] == null) {
@@ -29,8 +38,8 @@ class AuthService {
     _userId = params['user'];
     _authenticated = ctrl['code'] >= 200 && ctrl['code'] < 300;
 
-    if (params['token'] && params['expires']) {
-      _authToken = AuthToken(token: params['token'], expires: params['expires']);
+    if (params['token'] != null && params['expires'] != null) {
+      _authToken = AuthToken(token: params['token'], expires: DateTime.parse(params['expires']));
     } else {
       _authToken = null;
     }

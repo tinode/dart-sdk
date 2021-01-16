@@ -57,9 +57,9 @@ class AccPacketData extends PacketData {
 }
 
 class LoginPacketData extends PacketData {
-  final String scheme;
-  final String secret;
-  final String cred;
+  String scheme;
+  String secret;
+  Map<String, dynamic> cred;
 
   LoginPacketData({this.scheme, this.secret, this.cred});
 

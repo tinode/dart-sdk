@@ -37,7 +37,6 @@ class ConnectionService {
   /// Connection options is required. Defining callbacks is not necessary
   ConnectionService(this._options) {
     _loggerService = GetIt.I.get<LoggerService>();
-    connect();
   }
 
   bool get isConnected {

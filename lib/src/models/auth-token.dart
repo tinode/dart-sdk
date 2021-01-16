@@ -1,6 +1,6 @@
 class AuthToken {
   final String token;
-  final String expires;
+  final DateTime expires;
 
   AuthToken({this.token, this.expires});
 }

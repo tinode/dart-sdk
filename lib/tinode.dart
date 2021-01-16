@@ -4,10 +4,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/auth-token.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/models/auth-token.dart';
 import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/models/account-params.dart';
 import 'package:tinode/src/services/cache-manager.dart';
@@ -77,10 +77,6 @@ class Tinode {
       _onConnectionMessage(input);
     });
 
-    _onConnectedSubscription ??= _connectionService.onOpen.listen((_) {
-      hello();
-    });
-
     _onDisconnectedSubscription ??= _connectionService.onDisconnect.listen((_) {
       _onConnectionDisconnect();
     });
@@ -148,9 +144,10 @@ class Tinode {
   }
 
   /// Open the connection
-  Future connect() {
+  Future connect() async {
     _doSubscriptions();
-    return _connectionService.connect();
+    await _connectionService.connect();
+    return hello();
   }
 
   /// Close the current connection
@@ -218,5 +215,40 @@ class Tinode {
     username ??= '';
     var secret = base64.encode(utf8.encode(username + ':' + password));
     return createAccount('basic', secret, login, params);
+  }
+
+  /// Update account with basic
+  Future updateAccountBasic(String userId, String username, String password, AccountParams params) {
+    username ??= '';
+    username ??= '';
+    var secret = base64.encode(utf8.encode(username + ':' + password));
+    return account(userId, 'basic', secret, false, params);
+  }
+
+  /// Authenticate current session.
+  Future login(String scheme, String secret, Map<String, dynamic> cred) {
+    return _tinodeService.login(scheme, secret, cred);
+  }
+
+  /// Wrapper for `login` with basic authentication
+  Future loginBasic(String username, String password, Map<String, dynamic> cred) async {
+    var secret = base64.encode(utf8.encode(username + ':' + password));
+    var ctrl = await login('basic', secret, cred);
+    _authService.setLastLogin(username);
+    return ctrl;
+  }
+
+  /// Wrapper for `login` with token authentication
+  Future loginToken(String token, Map<String, dynamic> cred) {
+    return login('token', token, cred);
+  }
+
+  /// Send a request for resetting an authentication secret.
+  /// * scheme - authentication scheme to reset ex: `basic`
+  /// * method - method to use for resetting the secret, such as "email" or "tel"
+  /// * value - value of the credential to use, a specific email address or a phone number.
+  Future requestResetSecret(String scheme, String method, String value) {
+    var secret = base64.encode(utf8.encode(scheme + ':' + method + ':' + value));
+    return login('reset', secret, null);
   }
 }
