@@ -109,13 +109,13 @@ class LeavePacketData extends PacketData {
 }
 
 class PubPacketData extends PacketData {
-  final String topic;
-  final bool noecho;
-  final dynamic head;
-  final dynamic content;
-  final int seq;
-  final String from;
-  final DateTime ts;
+  String topic;
+  bool noecho;
+  dynamic head;
+  dynamic content;
+  int seq;
+  String from;
+  DateTime ts;
 
   PubPacketData({this.topic, this.noecho, this.head, this.content, this.seq, this.from, this.ts});
 

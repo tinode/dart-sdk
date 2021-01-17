@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
@@ -262,5 +263,11 @@ class Tinode {
   /// Detach and optionally unsubscribe from the topic
   Future leave(String topicName, bool unsubscribe) {
     return _tinodeService.leave(topicName, unsubscribe);
+  }
+
+  /// Create message draft without sending it to the server
+  Message createMessage(String topicName, dynamic data, bool echo) {
+    echo ??= true;
+    return Message(topicName, data, echo);
   }
 }
