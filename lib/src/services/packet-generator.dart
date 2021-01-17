@@ -50,8 +50,8 @@ class PacketGenerator {
       case PacketTypes.Sub:
         packetData = SubPacketData(
           topic: topicName,
-          set: {},
-          get: {},
+          set: null,
+          get: null,
         );
         break;
 

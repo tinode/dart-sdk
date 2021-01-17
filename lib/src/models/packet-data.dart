@@ -1,3 +1,6 @@
+import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/models/set-params.dart';
+
 abstract class PacketData {
   Map<String, dynamic> toMap();
 }
@@ -74,9 +77,9 @@ class LoginPacketData extends PacketData {
 }
 
 class SubPacketData extends PacketData {
-  final String topic;
-  final Map<String, dynamic> set;
-  final Map<String, dynamic> get;
+  String topic;
+  SetParams set;
+  GetQuery get;
 
   SubPacketData({this.topic, this.set, this.get});
 

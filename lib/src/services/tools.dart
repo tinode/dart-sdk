@@ -1,5 +1,6 @@
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/connection-options.dart';
+import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 
 var messageId = 89077;
 
@@ -22,5 +23,13 @@ class Tools {
       return AccessMode(value);
     }
     return value;
+  }
+
+  static bool isNewGroupTopicName(String topicName) {
+    return (topicName is String) && topicName.substring(0, 3) == TopicNames.TOPIC_NEW;
+  }
+
+  static String topicType(String topicName) {
+    return topicName.substring(0, 3);
   }
 }

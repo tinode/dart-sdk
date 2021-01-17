@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
@@ -250,5 +252,10 @@ class Tinode {
   Future requestResetSecret(String scheme, String method, String value) {
     var secret = base64.encode(utf8.encode(scheme + ':' + method + ':' + value));
     return login('reset', secret, null);
+  }
+
+  /// Send a topic subscription request.
+  Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
+    return _tinodeService.subscribe(topicName, getParams, setParams);
   }
 }

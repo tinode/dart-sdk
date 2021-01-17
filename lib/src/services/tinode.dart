@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/get-query.dart';
 import 'package:tinode/src/models/packet.dart';
+import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/models/packet-data.dart';
@@ -12,8 +14,10 @@ import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/future-manager.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
+import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/services/tools.dart';
 import 'package:tinode/src/topic.dart';
 
 /// This class contains basic functionality and logic to
@@ -176,10 +180,45 @@ class TinodeService {
     data.scheme = scheme;
     data.secret = secret;
     data.cred = cred;
+
     packet.data = data;
 
     var ctrl = await _send(packet);
     _authService.onLoginSuccessful(ctrl);
     return ctrl;
+  }
+
+  Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
+    var packet = _packetGenerator.generate(PacketTypes.Sub, topicName);
+    SubPacketData data = packet.data;
+
+    if (topicName == '' || topicName == null) {
+      topicName = TopicNames.TOPIC_NEW;
+    }
+
+    data.get = getParams;
+
+    if (setParams != null) {
+      if (setParams.sub != null) {
+        data.set.sub = setParams.sub;
+      }
+
+      if (setParams.desc != null) {
+        if (Tools.isNewGroupTopicName(topicName)) {
+          // Full set.desc params are used for new topics only
+          data.set.desc = setParams.desc;
+        } else if (Tools.topicType(topicName) == 'p2p' && setParams.desc.defacs != null) {
+          // Use optional default permissions only.
+          data.set.desc = SetDesc(defacs: setParams.desc.defacs);
+        }
+      }
+
+      if (setParams.tags != null) {
+        data.set.tags = setParams.tags;
+      }
+    }
+
+    packet.data = data;
+    return _send(packet);
   }
 }
