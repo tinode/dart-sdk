@@ -221,4 +221,12 @@ class TinodeService {
     packet.data = data;
     return _send(packet);
   }
+
+  Future leave(String topicName, bool unsubscribe) {
+    var packet = _packetGenerator.generate(PacketTypes.Leave, topicName);
+    LeavePacketData data = packet.data;
+    data.unsub = unsubscribe;
+    packet.data = data;
+    return _send(packet);
+  }
 }

@@ -258,4 +258,9 @@ class Tinode {
   Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
     return _tinodeService.subscribe(topicName, getParams, setParams);
   }
+
+  /// Detach and optionally unsubscribe from the topic
+  Future leave(String topicName, bool unsubscribe) {
+    return _tinodeService.leave(topicName, unsubscribe);
+  }
 }

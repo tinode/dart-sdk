@@ -95,7 +95,7 @@ class SubPacketData extends PacketData {
 
 class LeavePacketData extends PacketData {
   final String topic;
-  final bool unsub;
+  bool unsub;
 
   LeavePacketData({this.topic, this.unsub});
 
