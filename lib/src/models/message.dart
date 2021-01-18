@@ -1,8 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/packet.dart';
-import 'package:tinode/src/models/drafty.dart';
-import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/models/packet-data.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
@@ -31,29 +29,8 @@ class Message {
   Packet asPubPacket() {
     var packet = _packetGenerator.generate(PacketTypes.Pub, topicName);
     PubPacketData data = packet.data;
-    var dft;
-    if (content is String) {
-      dft = Drafty.parse(content);
-    } else {
-      dft = content;
-    }
-
     data.content = content;
     data.noecho = !echo;
-
-    if (dft != null && !Drafty.isPlainText(dft)) {
-      data.head = {'mime': Drafty.getContentType()};
-      data.content = dft;
-
-      if (Drafty.hasAttachments(data.content) && data.head.attachments == null) {
-        var attachments = [];
-        Drafty.attachments(data.content, (dynamic data) {
-          attachments.add(data.ref);
-        });
-        data.head.attachments = attachments;
-      }
-    }
-
     packet.data = data;
     return packet;
   }
