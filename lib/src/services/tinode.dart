@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/packet.dart';
 import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/services/auth.dart';
@@ -227,6 +228,55 @@ class TinodeService {
     LeavePacketData data = packet.data;
     data.unsub = unsubscribe;
     packet.data = data;
+    return _send(packet);
+  }
+
+  Future publishMessage(Message message) {
+    message.resetLocalValues();
+    return _send(message.asPubPacket());
+  }
+
+  Future getMeta(String topicName, GetQuery params) {
+    var packet = _packetGenerator.generate(PacketTypes.Get, topicName);
+    GetPacketData data = packet.data;
+
+    data.data = params.data;
+    data.desc = params.desc;
+    data.what = params.what;
+    data.sub = params.sub;
+
+    packet.data = data;
+    return _send(packet);
+  }
+
+  Future setMeta(String topicName, SetParams params) {
+    var packet = _packetGenerator.generate(PacketTypes.Set, topicName);
+    SetPacketData data = packet.data;
+
+    var what = [];
+    if (params != null) {
+      if (params.desc != null) {
+        what.add('desc');
+        data.desc = params.desc;
+      }
+      if (params.sub != null) {
+        what.add('sub');
+        data.sub = params.sub;
+      }
+      if (params.tags != null) {
+        what.add('tags');
+        data.tags = params.tags;
+      }
+      if (params.cred != null) {
+        what.add('cred');
+        data.cred = params.cred;
+      }
+
+      if (what.isEmpty) {
+        throw Exception('Invalid {set} parameters');
+      }
+    }
+
     return _send(packet);
   }
 }

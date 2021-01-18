@@ -134,11 +134,11 @@ class PubPacketData extends PacketData {
 }
 
 class GetPacketData extends PacketData {
-  final String topic;
-  final String what;
-  final dynamic desc;
-  final dynamic sub;
-  final dynamic data;
+  String topic;
+  String what;
+  dynamic desc;
+  dynamic sub;
+  dynamic data;
 
   GetPacketData({this.topic, this.what, this.desc, this.sub, this.data});
 
@@ -155,12 +155,13 @@ class GetPacketData extends PacketData {
 }
 
 class SetPacketData extends PacketData {
-  final String topic;
-  final dynamic desc;
-  final dynamic sub;
-  final List<String> tags;
+  String topic;
+  dynamic desc;
+  dynamic sub;
+  dynamic cred;
+  List<String> tags;
 
-  SetPacketData({this.topic, this.desc, this.sub, this.tags});
+  SetPacketData({this.topic, this.desc, this.sub, this.tags, this.cred});
 
   @override
   Map<String, dynamic> toMap() {
@@ -169,6 +170,7 @@ class SetPacketData extends PacketData {
       'desc': desc,
       'sub': sub,
       'tags': tags,
+      'cred': cred,
     };
   }
 }

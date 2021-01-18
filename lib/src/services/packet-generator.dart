@@ -33,8 +33,8 @@ class PacketGenerator {
           secret: null,
           login: false,
           tags: null,
-          desc: {},
-          cred: {},
+          desc: null,
+          cred: null,
           token: null,
         );
         break;
@@ -66,7 +66,7 @@ class PacketGenerator {
         packetData = PubPacketData(
           topic: topicName,
           noecho: false,
-          content: {},
+          content: null,
           head: null,
           from: null,
           seq: null,
@@ -78,18 +78,18 @@ class PacketGenerator {
         packetData = GetPacketData(
           topic: topicName,
           what: null,
-          desc: {},
-          sub: {},
-          data: {},
+          desc: null,
+          sub: null,
+          data: null,
         );
         break;
 
       case PacketTypes.Set:
         packetData = SetPacketData(
           topic: topicName,
-          desc: {},
-          sub: {},
-          tags: [],
+          desc: null,
+          sub: null,
+          tags: null,
         );
         break;
 

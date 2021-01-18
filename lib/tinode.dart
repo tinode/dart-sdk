@@ -270,4 +270,19 @@ class Tinode {
     echo ??= true;
     return Message(topicName, data, echo);
   }
+
+  /// Publish message to topic. The message should be created by `createMessage`
+  Future publishMessage(Message message) {
+    return _tinodeService.publishMessage(message);
+  }
+
+  /// Request topic metadata
+  Future getMeta(String topicName, GetQuery params) {
+    return _tinodeService.getMeta(topicName, params);
+  }
+
+  /// Update topic's metadata: description, subscriptions.
+  Future setMeta(String topicName, SetParams params) {
+    return _tinodeService.setMeta(topicName, params);
+  }
 }
