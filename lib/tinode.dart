@@ -301,4 +301,9 @@ class Tinode {
   Future deleteSubscription(String topicName, String userId) {
     return _tinodeService.deleteSubscription(topicName, userId);
   }
+
+  /// Delete credential. Always sent on 'me' topic.
+  Future deleteCredential(String method, String value) {
+    return _tinodeService.deleteCredential(method, userId);
+  }
 }

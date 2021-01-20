@@ -310,4 +310,13 @@ class TinodeService {
     packet.data = data;
     return _send(packet);
   }
+
+  Future deleteCredential(String method, String value) {
+    var packet = _packetGenerator.generate(PacketTypes.Del, TopicNames.TOPIC_ME);
+    DelPacketData data = packet.data;
+    data.what = 'cred';
+    data.cred = {'meth': method, 'val': value};
+    packet.data = data;
+    return _send(packet);
+  }
 }
