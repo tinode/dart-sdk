@@ -291,4 +291,16 @@ class TinodeService {
     packet.data = data;
     return _send(packet);
   }
+
+  /// Delete the topic all together. Requires Owner permission.
+  Future deleteTopic(String topicName, bool hard) async {
+    var packet = _packetGenerator.generate(PacketTypes.Del, topicName);
+    DelPacketData data = packet.data;
+    data.what = 'topic';
+    data.hard = hard;
+    packet.data = data;
+    var ctrl = await _send(packet);
+    _cacheManager.cacheDel('topic', topicName);
+    return ctrl;
+  }
 }
