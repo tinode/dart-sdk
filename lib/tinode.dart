@@ -287,11 +287,18 @@ class Tinode {
     return _tinodeService.setMeta(topicName, params);
   }
 
+  /// Delete some or all messages in a topic.
   Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
     return _tinodeService.deleteMessages(topicName, ranges, hard);
   }
 
-  Future deleteTopic(String topicName, bool hard) async {
+  /// Delete the topic all together. Requires Owner permission.
+  Future deleteTopic(String topicName, bool hard) {
     return _tinodeService.deleteTopic(topicName, hard);
+  }
+
+  /// Delete subscription. Requires Share permission.
+  Future deleteSubscription(String topicName, String userId) {
+    return _tinodeService.deleteSubscription(topicName, userId);
   }
 }

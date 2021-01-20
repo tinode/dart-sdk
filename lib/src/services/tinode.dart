@@ -281,7 +281,6 @@ class TinodeService {
     return _send(packet);
   }
 
-  /// Delete some or all messages in a topic.
   Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
     var packet = _packetGenerator.generate(PacketTypes.Del, topicName);
     DelPacketData data = packet.data;
@@ -292,7 +291,6 @@ class TinodeService {
     return _send(packet);
   }
 
-  /// Delete the topic all together. Requires Owner permission.
   Future deleteTopic(String topicName, bool hard) async {
     var packet = _packetGenerator.generate(PacketTypes.Del, topicName);
     DelPacketData data = packet.data;
@@ -302,5 +300,14 @@ class TinodeService {
     var ctrl = await _send(packet);
     _cacheManager.cacheDel('topic', topicName);
     return ctrl;
+  }
+
+  Future deleteSubscription(String topicName, String userId) {
+    var packet = _packetGenerator.generate(PacketTypes.Del, topicName);
+    DelPacketData data = packet.data;
+    data.what = 'sub';
+    data.user = userId;
+    packet.data = data;
+    return _send(packet);
   }
 }
