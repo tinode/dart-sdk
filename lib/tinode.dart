@@ -4,12 +4,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/get-query.dart';
-import 'package:tinode/src/models/message.dart';
-import 'package:tinode/src/models/set-params.dart';
+import 'package:tinode/src/models/del-range.dart';
 import 'package:tinode/src/services/auth.dart';
+import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/models/auth-token.dart';
 import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/models/account-params.dart';
@@ -284,5 +285,9 @@ class Tinode {
   /// Update topic's metadata: description, subscriptions.
   Future setMeta(String topicName, SetParams params) {
     return _tinodeService.setMeta(topicName, params);
+  }
+
+  Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
+    return _tinodeService.deleteMessages(topicName, ranges, hard);
   }
 }

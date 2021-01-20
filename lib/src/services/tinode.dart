@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/del-range.dart';
 import 'package:tinode/src/models/get-query.dart';
 import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/packet.dart';
@@ -277,6 +278,17 @@ class TinodeService {
       }
     }
 
+    return _send(packet);
+  }
+
+  /// Delete some or all messages in a topic.
+  Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
+    var packet = _packetGenerator.generate(PacketTypes.Del, topicName);
+    DelPacketData data = packet.data;
+    data.what = 'msg';
+    data.delseq = ranges;
+    data.hard = hard;
+    packet.data = data;
     return _send(packet);
   }
 }

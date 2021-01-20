@@ -176,12 +176,12 @@ class SetPacketData extends PacketData {
 }
 
 class DelPacketData extends PacketData {
-  final String topic;
-  final String what;
-  final dynamic delseq;
-  final dynamic user;
-  final bool hard;
-  final dynamic cred;
+  String topic;
+  String what;
+  dynamic delseq;
+  dynamic user;
+  bool hard;
+  dynamic cred;
 
   DelPacketData({this.topic, this.what, this.delseq, this.user, this.hard, this.cred});
 
