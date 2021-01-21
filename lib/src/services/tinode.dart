@@ -319,4 +319,13 @@ class TinodeService {
     packet.data = data;
     return _send(packet);
   }
+
+  Future deleteCurrentUser(bool hard) {
+    var packet = _packetGenerator.generate(PacketTypes.Del, null);
+    DelPacketData data = packet.data;
+    data.hard = hard;
+    data.what = 'user';
+    packet.data = data;
+    return _send(packet);
+  }
 }

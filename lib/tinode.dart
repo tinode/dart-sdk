@@ -306,4 +306,9 @@ class Tinode {
   Future deleteCredential(String method, String value) {
     return _tinodeService.deleteCredential(method, userId);
   }
+
+  /// Request to delete account of the current user.
+  Future deleteCurrentUser(bool hard) {
+    return _tinodeService.deleteCurrentUser(hard);
+  }
 }
