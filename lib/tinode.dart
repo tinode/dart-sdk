@@ -311,4 +311,9 @@ class Tinode {
   Future deleteCurrentUser(bool hard) {
     return _tinodeService.deleteCurrentUser(hard);
   }
+
+  /// Notify server that a message or messages were read or received. Does NOT return promise.
+  void note(String topicName, String what, int seq) {
+    _tinodeService.note(topicName, what, seq);
+  }
 }

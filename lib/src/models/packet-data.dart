@@ -199,9 +199,9 @@ class DelPacketData extends PacketData {
 }
 
 class NotePacketData extends PacketData {
-  final String topic;
-  final String what;
-  final dynamic seq;
+  String topic;
+  String what;
+  dynamic seq;
 
   NotePacketData({this.topic, this.what, this.seq});
 

@@ -328,4 +328,16 @@ class TinodeService {
     packet.data = data;
     return _send(packet);
   }
+
+  Future note(String topicName, String what, int seq) {
+    if (seq <= 0 || seq >= _configService.appSettings.localSeqId) {
+      throw Exception('Invalid message id ' + seq.toString());
+    }
+
+    var packet = _packetGenerator.generate(PacketTypes.Note, topicName);
+    NotePacketData data = packet.data;
+    data.what = what;
+    data.seq = seq;
+    return _send(packet);
+  }
 }
