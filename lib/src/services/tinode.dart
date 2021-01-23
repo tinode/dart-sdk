@@ -338,6 +338,15 @@ class TinodeService {
     NotePacketData data = packet.data;
     data.what = what;
     data.seq = seq;
+    packet.data = data;
+    return _send(packet);
+  }
+
+  Future noteKeyPress(String topicName) {
+    var packet = _packetGenerator.generate(PacketTypes.Note, topicName);
+    NotePacketData data = packet.data;
+    data.what = 'kp';
+    packet.data = data;
     return _send(packet);
   }
 }

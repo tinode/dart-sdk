@@ -313,7 +313,13 @@ class Tinode {
   }
 
   /// Notify server that a message or messages were read or received. Does NOT return promise.
-  void note(String topicName, String what, int seq) {
+  void _note(String topicName, String what, int seq) {
     _tinodeService.note(topicName, what, seq);
+  }
+
+  /// Broadcast a key-press notification to topic subscribers. Used to show
+  /// typing notifications "user X is typing..."
+  void noteKeyPress(String topicName) async {
+    await _tinodeService.noteKeyPress(topicName);
   }
 }
