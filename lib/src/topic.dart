@@ -1,4 +1,5 @@
 class Topic {
+  Topic(String topicName) {}
   resetSub() {}
   allMessagesReceived(int count) {}
   processMetaSub(List<dynamic> a) {}

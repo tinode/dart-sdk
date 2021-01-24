@@ -22,6 +22,8 @@ import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/topic-fnd.dart';
+import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
 import 'package:tinode/src/services/tools.dart';
 
@@ -313,7 +315,7 @@ class Tinode {
   }
 
   /// Notify server that a message or messages were read or received. Does NOT return promise.
-  void _note(String topicName, String what, int seq) {
+  void note(String topicName, String what, int seq) {
     _tinodeService.note(topicName, what, seq);
   }
 
@@ -321,5 +323,23 @@ class Tinode {
   /// typing notifications "user X is typing..."
   void noteKeyPress(String topicName) async {
     await _tinodeService.noteKeyPress(topicName);
+  }
+
+  /// Get a named topic, either pull it from cache or create a new instance.
+  /// There is a single instance of topic for each name
+  Topic getTopic(String topicName) {
+    Topic topic = _cacheManager.cacheGet('topic', topicName);
+    if (topic == null && topicName != null) {
+      if (topicName == TopicNames.TOPIC_ME) {
+        topic = TopicMe();
+      } else if (topicName == TopicNames.TOPIC_FND) {
+        topic = TopicFnd();
+      } else {
+        topic = Topic(topicName);
+      }
+      _cacheManager.cachePut('topic', topicName, topic);
+      // this.attachCacheToTopic(topic);
+    }
+    return topic;
   }
 }
