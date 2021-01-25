@@ -338,8 +338,17 @@ class Tinode {
         topic = Topic(topicName);
       }
       _cacheManager.cachePut('topic', topicName, topic);
-      // this.attachCacheToTopic(topic);
     }
     return topic;
+  }
+
+  /// Instantiate a new group topic. An actual name will be assigned by the server
+  Topic createTopic() {
+    return Topic(TopicNames.TOPIC_NEW);
+  }
+
+  /// Instantiate a new channel-enabled group topic. An actual name will be assigned by the server
+  Topic createChannel() {
+    return Topic(TopicNames.TOPIC_NEW_CHAN);
   }
 }
