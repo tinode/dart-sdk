@@ -328,18 +328,12 @@ class Tinode {
   /// Get a named topic, either pull it from cache or create a new instance.
   /// There is a single instance of topic for each name
   Topic getTopic(String topicName) {
-    Topic topic = _cacheManager.cacheGet('topic', topicName);
-    if (topic == null && topicName != null) {
-      if (topicName == TopicNames.TOPIC_ME) {
-        topic = TopicMe();
-      } else if (topicName == TopicNames.TOPIC_FND) {
-        topic = TopicFnd();
-      } else {
-        topic = Topic(topicName);
-      }
-      _cacheManager.cachePut('topic', topicName, topic);
-    }
-    return topic;
+    return _tinodeService.getTopic(topicName);
+  }
+
+  /// Instantiate 'me' topic or get it from cache.
+  TopicMe getMeTopic() {
+    return _tinodeService.getTopic(TopicNames.TOPIC_ME);
   }
 
   /// Instantiate a new group topic. An actual name will be assigned by the server

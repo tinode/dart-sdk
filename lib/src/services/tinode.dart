@@ -20,7 +20,10 @@ import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 
 import 'package:get_it/get_it.dart';
 import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
+
+import '../topic-fnd.dart';
 
 /// This class contains basic functionality and logic to
 class TinodeService {
@@ -188,6 +191,21 @@ class TinodeService {
     var ctrl = await _send(packet);
     _authService.onLoginSuccessful(ctrl);
     return ctrl;
+  }
+
+  Topic getTopic(String topicName) {
+    Topic topic = _cacheManager.cacheGet('topic', topicName);
+    if (topic == null && topicName != null) {
+      if (topicName == TopicNames.TOPIC_ME) {
+        topic = TopicMe();
+      } else if (topicName == TopicNames.TOPIC_FND) {
+        topic = TopicFnd();
+      } else {
+        topic = Topic(topicName);
+      }
+      _cacheManager.cachePut('topic', topicName, topic);
+    }
+    return topic;
   }
 
   Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {

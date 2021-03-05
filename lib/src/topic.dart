@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/topic-me.dart';
 import 'package:get_it/get_it.dart';
 
 import 'models/get-query.dart';
@@ -56,18 +57,30 @@ class Topic {
       _new = false;
 
       // Name may change new123456 -> grpAbCdEf
-      name = ctrl.topic;
-      created = ctrl.ts;
-      updated = ctrl.ts;
+      name = ctrl['topic'];
+      created = ctrl['ts'];
+      updated = ctrl['ts'];
 
       if (name != TopicNames.TOPIC_ME && name != TopicNames.TOPIC_FND) {
         // Add the new topic to the list of contacts maintained by the 'me' topic.
-        // TODO: Complete this method
+        TopicMe me = _tinodeService.getTopic(TopicNames.TOPIC_ME);
+        if (me != null) {
+          me.processMetaSub([
+            {'noForwarding': true, 'topic': name, 'created': ctrl['ts'], 'updated': ctrl['ts'], 'acs': acs}
+          ]);
+        }
+      }
+
+      if (setParams != null && setParams.desc != null) {
+        setParams.desc.noForwarding = true;
+        processMetaDesc(setParams.desc);
       }
     }
+    return ctrl;
   }
 
   resetSub() {}
+  processMetaDesc(SetDesc a) {}
   allMessagesReceived(int count) {}
   processMetaSub(List<dynamic> a) {}
   routeMeta(dynamic a) {}
