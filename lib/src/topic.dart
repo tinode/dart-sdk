@@ -84,6 +84,10 @@ class Topic {
     return _tinodeService.createMessage(name, data, echo);
   }
 
+  Future publishMessage(Message message) {
+    return _tinodeService.publishMessage(message);
+  }
+
   resetSub() {}
   processMetaDesc(SetDesc a) {}
   allMessagesReceived(int count) {}

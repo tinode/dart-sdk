@@ -48,5 +48,6 @@ class Message {
     seq = null;
     from = null;
     ts = null;
+    setStatus(MessageStatus.NONE);
   }
 }
