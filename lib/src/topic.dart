@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:rxdart/rxdart.dart';
+import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/services/tinode.dart';
@@ -20,6 +22,8 @@ class Topic {
   DateTime updated;
   bool _subscribed;
   TinodeService _tinodeService;
+
+  PublishSubject onData = PublishSubject<dynamic>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -84,11 +88,32 @@ class Topic {
     return _tinodeService.createMessage(name, data, echo);
   }
 
-  Future publishMessage(Message message) {
-    return _tinodeService.publishMessage(message);
+  Future publishMessage(Message message) async {
+    if (!isSubscribed) {
+      return Future.error(Exception('Cannot publish on inactive topic'));
+    }
+
+    message.setStatus(MessageStatus.SENDING);
+
+    try {
+      var ctrl = await _tinodeService.publishMessage(message);
+      var seq = ctrl['params']['seq'];
+      if (seq != null) {
+        message.setStatus(MessageStatus.SENT);
+      }
+      message.ts = ctrl['ts'];
+      swapMessageId(message, seq);
+      routeData(message);
+    } catch (e) {
+      print('WARNING: Message rejected by the server');
+      print(e.toString());
+      message.setStatus(MessageStatus.FAILED);
+      onData.add(null);
+    }
   }
 
   resetSub() {}
+  swapMessageId(Message m, int newSeqId) {}
   processMetaDesc(SetDesc a) {}
   allMessagesReceived(int count) {}
   processMetaSub(List<dynamic> a) {}
