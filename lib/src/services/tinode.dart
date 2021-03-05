@@ -250,6 +250,11 @@ class TinodeService {
     return _send(packet);
   }
 
+  Message createMessage(String topicName, dynamic data, bool echo) {
+    echo ??= true;
+    return Message(topicName, data, echo);
+  }
+
   Future publishMessage(Message message) {
     message.resetLocalValues();
     return _send(message.asPubPacket());

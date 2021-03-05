@@ -270,8 +270,7 @@ class Tinode {
 
   /// Create message draft without sending it to the server
   Message createMessage(String topicName, dynamic data, bool echo) {
-    echo ??= true;
-    return Message(topicName, data, echo);
+    return _tinodeService.createMessage(topicName, data, echo);
   }
 
   /// Publish message to topic. The message should be created by `createMessage`

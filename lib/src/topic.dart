@@ -7,6 +7,7 @@ import 'package:tinode/src/topic-me.dart';
 import 'package:get_it/get_it.dart';
 
 import 'models/get-query.dart';
+import 'models/message.dart';
 import 'models/set-params.dart';
 
 /// TODO: Implement `attachCacheToTopic` too
@@ -77,6 +78,10 @@ class Topic {
       }
     }
     return ctrl;
+  }
+
+  Message createMessage(dynamic data, bool echo) {
+    return _tinodeService.createMessage(name, data, echo);
   }
 
   resetSub() {}
