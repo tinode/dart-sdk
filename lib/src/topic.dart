@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
@@ -39,6 +40,7 @@ class Topic {
   ConfigService _configService;
 
   PublishSubject onData = PublishSubject<dynamic>();
+  PublishSubject onSubsUpdated = PublishSubject<dynamic>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -304,6 +306,107 @@ class Topic {
       return Future.value();
     }
     return deleteMessages([DelRange(low: 1, hi: maxSeq + 1, all: true)], hard);
+  }
+
+  Future deleteMessagesList(List<int> list, bool hard) {
+    list.sort((a, b) => a - b);
+
+    var ranges = [];
+    // Convert the array of IDs to ranges.
+    list.forEach((id) {
+      if (ranges.isEmpty) {
+        // First element.
+        ranges.add({'low': id});
+      } else {
+        Map<String, int> prev = ranges[ranges.length - 1];
+        if ((prev['hi'] == 0 && (id != prev['low'] + 1)) || (id > prev['hi'])) {
+          // New range.
+          ranges.add({'low': id});
+        } else {
+          // Expand existing range.
+          prev['hi'] = prev['hi'] != null ? max(prev['hi'], id + 1) : id + 1;
+        }
+      }
+      return ranges;
+    });
+
+    // Send {del} message, return promise
+    return deleteMessages(ranges, hard);
+  }
+
+  Future deleteTopic(bool hard) async {
+    var ctrl = await _tinodeService.deleteTopic(name, hard);
+    resetSub();
+    gone();
+    return ctrl;
+  }
+
+  Future delSubscription(String user) async {
+    if (!isSubscribed) {
+      return Future.error(Exception('Cannot delete subscription in inactive topic'));
+    }
+    // Send {del} message, return promise
+    var ctrl = await _tinodeService.deleteSubscription(name, user);
+    // Remove the object from the subscription cache;
+    users.remove(user);
+    // Notify listeners
+    onSubsUpdated.add(users);
+    return ctrl;
+  }
+
+  void note(String what, int seq) {
+    if (!isSubscribed) {
+      // Cannot sending {note} on an inactive topic".
+      return;
+    }
+
+    TopicMe me = _tinodeService.getTopic(TopicNames.TOPIC_ME);
+    var user = users[_authService.userId];
+
+    var update = false;
+    if (user) {
+      if (!user[what] || user[what] < seq) {
+        user[what] = seq;
+        update = true;
+      }
+    } else if (me != null) {
+      // Subscriber not found, such as in case of no S permission.
+      update = me.getMsgReadRecv(name, what) < seq;
+    }
+
+    if (update) {
+      _tinodeService.note(name, what, seq);
+    }
+
+    if (me != null) {
+      me.setMsgReadRecv(name, what, seq);
+    }
+  }
+
+  void noteRecv(int seq) {
+    note('recv', seq);
+  }
+
+  void noteRead(int seq) {
+    seq = seq ?? maxSeq;
+    if (seq > 0) {
+      note('read', seq);
+    }
+  }
+
+  void noteKeyPress() {
+    if (isSubscribed) {
+      _tinodeService.noteKeyPress(name);
+    } else {
+      throw Exception('INFO: Cannot send notification in inactive topic');
+    }
+  }
+
+  dynamic userDesc(String uid) {
+    var user = _cacheManager.cacheGetUser(uid);
+    if (user) {
+      return user; // Promise.resolve(user)
+    }
   }
 
   startMetaQuery() {}

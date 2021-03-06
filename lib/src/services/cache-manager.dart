@@ -16,4 +16,14 @@ class CacheManager {
   void map(Function(String, dynamic) function) {
     _cache.map(function);
   }
+
+  dynamic cacheGetUser(String userId) {
+    var pub = cacheGet('user', userId);
+    if (pub != null) {
+      return {
+        'user': userId,
+        'public': pub,
+      };
+    }
+  }
 }
