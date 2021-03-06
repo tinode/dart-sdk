@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
-import 'package:tinode/src/models/topic-names.dart' as TopicNames;
+import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 export 'package:tinode/src/models/connection-options.dart';
@@ -28,25 +28,60 @@ import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
 
+/// Provides a simple interface to interact with tinode server using websocket
 class Tinode {
+  /// Authentication service, responsible for managing credentials and user id
   AuthService _authService;
+
+  /// Cache manager service, responsible for read and write operations on cached data
   CacheManager _cacheManager;
+
+  /// Configuration service, responsible for storing library config and information
   ConfigService _configService;
+
+  /// Tinode service, responsible for handling messages, preparing packets and sending them
   TinodeService _tinodeService;
+
+  /// Future manager, responsible for making futures and executing them
   FutureManager _futureManager;
+
+  /// Logger service, responsible for logging content in different levels
   LoggerService _loggerService;
+
+  /// Connection service, responsible for establishing a websocket connection to the server
   ConnectionService _connectionService;
+
+  /// `onMessage` subscription stored to unsubscribe later
   StreamSubscription _onMessageSubscription;
+
+  /// `onConnected` subscription stored to unsubscribe later
   StreamSubscription _onConnectedSubscription;
+
+  /// `onDisconnect` subscription stored to unsubscribe later
   StreamSubscription _onDisconnectedSubscription;
 
-  // Event
+  /// `onConnected` event will be triggered when connection opens
   PublishSubject<void> onConnected = PublishSubject<void>();
+
+  /// `onDisconnect` event will be triggered when connection is closed
   PublishSubject<void> onDisconnect = PublishSubject<void>();
+
+  /// `onNetworkProbe` event will be triggered when network prob packet is received
   PublishSubject<void> onNetworkProbe = PublishSubject<void>();
+
+  /// `onMessage` event will be triggered when a message is received
   PublishSubject<dynamic> onMessage = PublishSubject<dynamic>();
+
+  /// `onRawMessage` event will be triggered when a message is received value will be a json
   PublishSubject<String> onRawMessage = PublishSubject<String>();
 
+  /// Creates an instance of Tinode interface to interact with tinode server using websocket
+  ///
+  /// `appName` name of the client
+  ///
+  /// `options` connection configuration and api key
+  ///
+  /// `loggerEnabled` pass `true` if you want to turn the logger on
   Tinode(String appName, ConnectionOptions options, bool loggerEnabled) {
     _registerDependencies(options, loggerEnabled);
     _resolveDependencies();
@@ -55,6 +90,7 @@ class Tinode {
     _doSubscriptions();
   }
 
+  /// Register services in dependency injection container
   void _registerDependencies(ConnectionOptions options, bool loggerEnabled) {
     GetIt.I.registerSingleton<ConfigService>(ConfigService(loggerEnabled));
     GetIt.I.registerSingleton<LoggerService>(LoggerService());
@@ -66,6 +102,7 @@ class Tinode {
     GetIt.I.registerSingleton<TinodeService>(TinodeService());
   }
 
+  /// Resolve dependencies from container
   void _resolveDependencies() {
     _configService = GetIt.I.get<ConfigService>();
     _tinodeService = GetIt.I.get<TinodeService>();
@@ -76,9 +113,14 @@ class Tinode {
     _authService = GetIt.I.get<AuthService>();
   }
 
+  /// Subscribe to needed events like connection
   void _doSubscriptions() {
     _onMessageSubscription ??= _connectionService.onMessage.listen((input) {
       _onConnectionMessage(input);
+    });
+
+    _onConnectedSubscription ??= _connectionService.onOpen.listen((_) {
+      onConnected.add(null);
     });
 
     _onDisconnectedSubscription ??= _connectionService.onDisconnect.listen((_) {
@@ -88,6 +130,7 @@ class Tinode {
     _futureManager.startCheckingExpiredFutures();
   }
 
+  /// Unsubscribe every subscription to prevent memory leak
   void _unsubscribeAll() {
     _onMessageSubscription.cancel();
     _onMessageSubscription = null;
@@ -96,6 +139,7 @@ class Tinode {
     _futureManager.stopCheckingExpiredFutures();
   }
 
+  /// Unsubscribe and reset local variables when connection closes
   void _onConnectionDisconnect() {
     _unsubscribeAll();
     _futureManager.rejectAllFutures(0, 'disconnect');
@@ -108,6 +152,7 @@ class Tinode {
     onDisconnect.add(null);
   }
 
+  /// Handler for newly received messages from server
   void _onConnectionMessage(String input) {
     if (input == null || input == '') {
       return;
@@ -147,7 +192,7 @@ class Tinode {
     return _configService.appVersion;
   }
 
-  /// Open the connection
+  /// Open the connection and send a hello packet to server
   Future connect() async {
     _doSubscriptions();
     await _connectionService.connect();
@@ -202,7 +247,7 @@ class Tinode {
 
   /// Create a new user. Wrapper for `account` method.
   Future createAccount(String scheme, String secret, bool login, AccountParams params) {
-    var promise = account(TopicNames.USER_NEW, scheme, secret, login, params);
+    var promise = account(topic_names.USER_NEW, scheme, secret, login, params);
     if (login) {
       promise = promise.then((dynamic ctrl) {
         _authService.onLoginSuccessful(ctrl);
@@ -330,16 +375,16 @@ class Tinode {
 
   /// Instantiate 'me' topic or get it from cache.
   TopicMe getMeTopic() {
-    return _tinodeService.getTopic(TopicNames.TOPIC_ME);
+    return _tinodeService.getTopic(topic_names.TOPIC_ME);
   }
 
   /// Instantiate a new group topic. An actual name will be assigned by the server
   Topic createTopic() {
-    return Topic(TopicNames.TOPIC_NEW);
+    return Topic(topic_names.TOPIC_NEW);
   }
 
   /// Instantiate a new channel-enabled group topic. An actual name will be assigned by the server
   Topic createChannel() {
-    return Topic(TopicNames.TOPIC_NEW_CHAN);
+    return Topic(topic_names.TOPIC_NEW_CHAN);
   }
 }

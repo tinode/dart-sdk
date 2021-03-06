@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
-import 'package:tinode/src/models/access-mode.dart';
-import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/topic-me.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
+import 'models/set-params.dart';
 import 'models/del-range.dart';
 import 'models/get-query.dart';
 import 'models/message.dart';
-import 'models/set-params.dart';
 import 'models/values.dart';
 
 /// TODO: Implement `attachCacheToTopic` too
