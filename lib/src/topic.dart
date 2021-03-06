@@ -6,13 +6,16 @@ import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/cache-manager.dart';
+import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:get_it/get_it.dart';
 
+import 'models/del-range.dart';
 import 'models/get-query.dart';
 import 'models/message.dart';
 import 'models/set-params.dart';
+import 'models/values.dart';
 
 /// TODO: Implement `attachCacheToTopic` too
 
@@ -23,11 +26,17 @@ class Topic {
   DateTime created;
   DateTime updated;
   bool _subscribed;
+  dynamic private;
+  int maxSeq = 0;
+  int maxDel = 0;
+  List<String> tags;
   bool noEarlierMsgs;
+  Map<String, dynamic> users = {};
 
   AuthService _authService;
   CacheManager _cacheManager;
   TinodeService _tinodeService;
+  ConfigService _configService;
 
   PublishSubject onData = PublishSubject<dynamic>();
 
@@ -40,6 +49,7 @@ class Topic {
     _authService = GetIt.I.get<AuthService>();
     _cacheManager = GetIt.I.get<CacheManager>();
     _tinodeService = GetIt.I.get<TinodeService>();
+    _configService = GetIt.I.get<ConfigService>();
   }
 
   // See if you have subscribed to this topic
@@ -199,9 +209,109 @@ class Topic {
     return ctrl;
   }
 
+  dynamic subscriber(String userId) {
+    return users[userId];
+  }
+
+  AccessMode getAccessMode() {
+    return acs;
+  }
+
+  Future updateMode(String userId, String update) {
+    var user = userId != null ? subscriber(userId) : null;
+    var am = user != null ? user.acs.updateGiven(update).getGiven() : getAccessMode().updateWant(update).getWant();
+    return setMeta(SetParams(sub: SetSub(mode: am, user: userId)));
+  }
+
+  List<String> getTags() {
+    return [...tags];
+  }
+
+  Future invite(String userId, String mode) {
+    return setMeta(SetParams(sub: SetSub(user: userId, mode: mode)));
+  }
+
+  Future archive(bool arch) {
+    if (private && private.arch == arch) {
+      return Future.error(Exception('Cannot publish on inactive topic'));
+    }
+
+    return setMeta(SetParams(desc: SetDesc(private: {'arch': arch ? true : DEL_CHAR})));
+  }
+
+  Future deleteMessages(List<DelRange> ranges, bool hard) async {
+    if (!isSubscribed) {
+      return Future.error(Exception('Cannot delete messages in inactive topic'));
+    }
+
+    ranges.sort((r1, r2) {
+      if (r1.low < r2.low) {
+        return 1;
+      }
+      if (r1.low == r2.low) {
+        return r2.hi == 0 || (r1.hi >= r2.hi) == true ? 1 : -1;
+      }
+      return -1;
+    });
+
+    // Remove pending messages from ranges possibly clipping some ranges.
+    // ignore: omit_local_variable_types
+    List<DelRange> toSend = [];
+    ranges.forEach((r) {
+      if (r.low < _configService.appSettings.localSeqId) {
+        if (r.hi == 0 || r.hi < _configService.appSettings.localSeqId) {
+          toSend.add(r);
+        } else {
+          // Clip hi to max allowed value.
+          toSend.add(DelRange(low: r.low, hi: maxSeq + 1));
+        }
+      }
+    });
+
+    // Send {del} message, return promise
+    Future<dynamic> result;
+    if (toSend.isNotEmpty) {
+      result = _tinodeService.deleteMessages(name, toSend, hard);
+    } else {
+      result = Future.value({
+        'params': {'del': 0}
+      });
+    }
+
+    var ctrl = await result;
+
+    if (ctrl['params']['del'] > maxDel) {
+      maxDel = ctrl.params.del;
+    }
+
+    ranges.forEach((r) {
+      if (r.hi != 0) {
+        flushMessageRange(r.low, r.hi);
+      } else {
+        flushMessage(r.low);
+      }
+    });
+
+    updateDeletedRanges();
+    // Calling with no parameters to indicate the messages were deleted.
+    onData.add(null);
+    return ctrl;
+  }
+
+  Future deleteMessagesAll(bool hard) {
+    if (maxSeq == 0 || maxSeq <= 0) {
+      // There are no messages to delete.
+      return Future.value();
+    }
+    return deleteMessages([DelRange(low: 1, hi: maxSeq + 1, all: true)], hard);
+  }
+
   startMetaQuery() {}
   gone() {}
+  flushMessage(int a) {}
+  flushMessageRange(int a, int b) {}
   resetSub() {}
+  updateDeletedRanges() {}
   processMetaCreds(List<dynamic> a, bool b) {}
   swapMessageId(Message m, int newSeqId) {}
   processMetaDesc(SetDesc a) {}
