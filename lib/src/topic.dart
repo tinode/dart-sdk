@@ -4,6 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/topic-me.dart';
@@ -24,6 +25,7 @@ class Topic {
   bool _subscribed;
   bool noEarlierMsgs;
 
+  AuthService _authService;
   CacheManager _cacheManager;
   TinodeService _tinodeService;
 
@@ -35,6 +37,7 @@ class Topic {
   }
 
   void _resolveDependencies() {
+    _authService = GetIt.I.get<AuthService>();
     _cacheManager = GetIt.I.get<CacheManager>();
     _tinodeService = GetIt.I.get<TinodeService>();
   }
@@ -153,11 +156,56 @@ class Topic {
     return promise;
   }
 
+  Future setMeta(SetParams params) async {
+    // Send Set message, handle async response.
+    var ctrl = await _tinodeService.setMeta(name, params);
+    if (ctrl && ctrl.code >= 300) {
+      // Not modified
+      return ctrl;
+    }
+
+    if (params.sub != null) {
+      params.sub.topic = name;
+      if (ctrl['params'] && ctrl['params']['acs']) {
+        params.sub.acs = ctrl.params.acs;
+        params.sub.updated = ctrl.ts;
+      }
+      if (params.sub.user == null) {
+        // This is a subscription update of the current user.
+        // Assign user ID otherwise the update will be ignored by _processMetaSub.
+        params.sub.user = _authService.userId;
+        params.desc ??= SetDesc();
+      }
+      params.sub.noForwarding = true;
+      processMetaSub([params.sub]);
+    }
+
+    if (params.desc != null) {
+      if (ctrl.params && ctrl.params.acs) {
+        params.desc.acs = ctrl.params.acs;
+        params.desc.updated = ctrl.ts;
+      }
+      processMetaDesc(params.desc);
+    }
+
+    if (params.tags != null) {
+      processMetaTags(params.tags);
+    }
+
+    if (params.cred) {
+      processMetaCreds([params.cred], true);
+    }
+
+    return ctrl;
+  }
+
   startMetaQuery() {}
   gone() {}
   resetSub() {}
+  processMetaCreds(List<dynamic> a, bool b) {}
   swapMessageId(Message m, int newSeqId) {}
   processMetaDesc(SetDesc a) {}
+  processMetaTags(List<String> a) {}
   allMessagesReceived(int count) {}
   processMetaSub(List<dynamic> a) {}
   routeMeta(dynamic a) {}
