@@ -4,6 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:get_it/get_it.dart';
@@ -21,6 +22,8 @@ class Topic {
   DateTime created;
   DateTime updated;
   bool _subscribed;
+
+  CacheManager _cacheManager;
   TinodeService _tinodeService;
 
   PublishSubject onData = PublishSubject<dynamic>();
@@ -31,6 +34,7 @@ class Topic {
   }
 
   void _resolveDependencies() {
+    _cacheManager = GetIt.I.get<CacheManager>();
     _tinodeService = GetIt.I.get<TinodeService>();
   }
 
@@ -112,6 +116,21 @@ class Topic {
     }
   }
 
+  Future leave(bool unsubscribe) async {
+    if (!isSubscribed && !unsubscribe) {
+      return Future.error(Exception('Cannot publish on inactive topic'));
+    }
+
+    var ctrl = await _tinodeService.leave(name, unsubscribe);
+    resetSub();
+    if (unsubscribe) {
+      _cacheManager.cacheDel('topic', name);
+      gone();
+    }
+    return ctrl;
+  }
+
+  gone() {}
   resetSub() {}
   swapMessageId(Message m, int newSeqId) {}
   processMetaDesc(SetDesc a) {}

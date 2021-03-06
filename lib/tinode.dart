@@ -4,31 +4,29 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/del-range.dart';
-import 'package:tinode/src/services/auth.dart';
-import 'package:tinode/src/models/message.dart';
-import 'package:tinode/src/services/logger.dart';
-import 'package:tinode/src/services/tinode.dart';
-import 'package:tinode/src/models/get-query.dart';
-import 'package:tinode/src/models/set-params.dart';
-import 'package:tinode/src/models/auth-token.dart';
-import 'package:tinode/src/services/connection.dart';
-import 'package:tinode/src/models/account-params.dart';
-import 'package:tinode/src/services/cache-manager.dart';
-import 'package:tinode/src/services/configuration.dart';
-import 'package:tinode/src/services/future-manager.dart';
+import 'package:get_it/get_it.dart';
+
+import 'package:tinode/src/models/topic-names.dart' as TopicNames;
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
-import 'package:tinode/src/models/topic-names.dart' as TopicNames;
-
-import 'package:get_it/get_it.dart';
-import 'package:tinode/src/topic-fnd.dart';
+export 'package:tinode/src/models/connection-options.dart';
+import 'package:tinode/src/services/future-manager.dart';
+import 'package:tinode/src/services/cache-manager.dart';
+import 'package:tinode/src/services/configuration.dart';
+import 'package:tinode/src/models/account-params.dart';
+export 'package:tinode/src/models/configuration.dart';
+import 'package:tinode/src/services/connection.dart';
+import 'package:tinode/src/models/set-params.dart';
+import 'package:tinode/src/models/auth-token.dart';
+import 'package:tinode/src/models/del-range.dart';
+import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/services/logger.dart';
+import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/models/message.dart';
+import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
-import 'package:tinode/src/services/tools.dart';
-
-export 'src/models/configuration.dart';
-export 'src/models/connection-options.dart';
 
 class Tinode {
   AuthService _authService;
