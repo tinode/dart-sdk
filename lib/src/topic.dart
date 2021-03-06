@@ -22,6 +22,7 @@ class Topic {
   DateTime created;
   DateTime updated;
   bool _subscribed;
+  bool noEarlierMsgs;
 
   CacheManager _cacheManager;
   TinodeService _tinodeService;
@@ -130,6 +131,29 @@ class Topic {
     return ctrl;
   }
 
+  Future getMeta(GetQuery params) {
+    return _tinodeService.getMeta(name, params);
+  }
+
+  Future getMessagesPage(int limit, bool forward) {
+    var query = startMetaQuery();
+    var promise = getMeta(query.build());
+
+    if (forward) {
+      query.withLaterData(limit);
+    } else {
+      query.withEarlierData(limit);
+      promise = promise.then((ctrl) {
+        if (ctrl != null && ctrl['params'] != null && (ctrl['params']['count'] == null || ctrl.params.count == 0)) {
+          noEarlierMsgs = true;
+        }
+      });
+    }
+
+    return promise;
+  }
+
+  startMetaQuery() {}
   gone() {}
   resetSub() {}
   swapMessageId(Message m, int newSeqId) {}
