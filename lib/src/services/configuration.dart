@@ -33,6 +33,10 @@ class ConfigService {
     return _appSettings;
   }
 
+  ServerConfiguration get serverConfiguration {
+    return _serverConfiguration;
+  }
+
   String get userAgent {
     return appName + ' (Dart; ' + Platform.operatingSystem + '); tinode-dart/' + appVersion;
   }

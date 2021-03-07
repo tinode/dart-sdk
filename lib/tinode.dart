@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/models/server-configuration.dart';
 
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/connection-options.dart';
@@ -25,6 +26,7 @@ import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/services/tools.dart';
 import 'package:tinode/src/services/auth.dart';
+import 'package:tinode/src/topic-fnd.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
 
@@ -94,11 +96,11 @@ class Tinode {
   void _registerDependencies(ConnectionOptions options, bool loggerEnabled) {
     GetIt.I.registerSingleton<ConfigService>(ConfigService(loggerEnabled));
     GetIt.I.registerSingleton<LoggerService>(LoggerService());
+    GetIt.I.registerSingleton<AuthService>(AuthService());
     GetIt.I.registerSingleton<ConnectionService>(ConnectionService(options));
     GetIt.I.registerSingleton<FutureManager>(FutureManager());
     GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
     GetIt.I.registerSingleton<CacheManager>(CacheManager());
-    GetIt.I.registerSingleton<AuthService>(AuthService());
     GetIt.I.registerSingleton<TinodeService>(TinodeService());
   }
 
@@ -220,11 +222,6 @@ class Tinode {
     return _authService.isAuthenticated;
   }
 
-  /// Enable or disable logger service
-  void enableLogger(bool enabled) {
-    _configService.loggerEnabled = enabled;
-  }
-
   /// Current user token
   AuthToken get token {
     return _authService.authToken;
@@ -263,7 +260,7 @@ class Tinode {
     return _tinodeService.account(userId, scheme, secret, login, params);
   }
 
-  /// Create a new user. Wrapper for `account` method.
+  /// Create a new user. Wrapper for `account` method
   Future createAccount(String scheme, String secret, bool login, AccountParams params) {
     var promise = account(topic_names.USER_NEW, scheme, secret, login, params);
     if (login) {
@@ -292,7 +289,7 @@ class Tinode {
     return account(userId, 'basic', secret, false, params);
   }
 
-  /// Authenticate current session.
+  /// Authenticate current session
   Future login(String scheme, String secret, Map<String, dynamic> cred) {
     return _tinodeService.login(scheme, secret, cred);
   }
@@ -310,16 +307,21 @@ class Tinode {
     return login('token', token, cred);
   }
 
-  /// Send a request for resetting an authentication secret.
+  /// Send a request for resetting an authentication secret
   /// * scheme - authentication scheme to reset ex: `basic`
   /// * method - method to use for resetting the secret, such as "email" or "tel"
-  /// * value - value of the credential to use, a specific email address or a phone number.
+  /// * value - value of the credential to use, a specific email address or a phone number
   Future requestResetSecret(String scheme, String method, String value) {
     var secret = base64.encode(utf8.encode(scheme + ':' + method + ':' + value));
     return login('reset', secret, null);
   }
 
-  /// Send a topic subscription request.
+  /// Get stored authentication token
+  AuthToken getAuthenticationToken() {
+    return _authService.authToken;
+  }
+
+  /// Send a topic subscription request
   Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
     return _tinodeService.subscribe(topicName, getParams, setParams);
   }
@@ -344,37 +346,39 @@ class Tinode {
     return _tinodeService.getMeta(topicName, params);
   }
 
-  /// Update topic's metadata: description, subscriptions.
+  /// Update topic's metadata: description, subscriptions
   Future setMeta(String topicName, SetParams params) {
     return _tinodeService.setMeta(topicName, params);
   }
 
-  /// Delete some or all messages in a topic.
+  /// Delete some or all messages in a topic
   Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
     return _tinodeService.deleteMessages(topicName, ranges, hard);
   }
 
-  /// Delete the topic all together. Requires Owner permission.
+  /// Delete the topic all together. Requires Owner permission
   Future deleteTopic(String topicName, bool hard) {
     return _tinodeService.deleteTopic(topicName, hard);
   }
 
-  /// Delete subscription. Requires Share permission.
+  /// Delete subscription. Requires Share permission
   Future deleteSubscription(String topicName, String userId) {
     return _tinodeService.deleteSubscription(topicName, userId);
   }
 
-  /// Delete credential. Always sent on 'me' topic.
+  /// Delete credential. Always sent on 'me' topic
   Future deleteCredential(String method, String value) {
     return _tinodeService.deleteCredential(method, userId);
   }
 
-  /// Request to delete account of the current user.
-  Future deleteCurrentUser(bool hard) {
-    return _tinodeService.deleteCurrentUser(hard);
+  /// Request to delete account of the current user
+  Future deleteCurrentUser(bool hard) async {
+    var ctrl = _tinodeService.deleteCurrentUser(hard);
+    _authService.setUserId(null);
+    return ctrl;
   }
 
-  /// Notify server that a message or messages were read or received. Does NOT return promise.
+  /// Notify server that a message or messages were read or received. Does NOT return promise
   void note(String topicName, String what, int seq) {
     _tinodeService.note(topicName, what, seq);
   }
@@ -385,15 +389,76 @@ class Tinode {
     await _tinodeService.noteKeyPress(topicName);
   }
 
-  /// Get a named topic, either pull it from cache or create a new instance.
+  /// Get a named topic, either pull it from cache or create a new instance
   /// There is a single instance of topic for each name
   Topic getTopic(String topicName) {
     return _tinodeService.getTopic(topicName);
   }
 
-  /// Instantiate 'me' topic or get it from cache.
+  /// Check if named topic is already present in cache
+  bool isTopicCached(String topicName) {
+    var topic = _cacheManager.get('topic', topicName);
+    return topic != null;
+  }
+
+  /// Instantiate a new group topic. An actual name will be assigned by the server
+  Topic newTopic() {
+    return _tinodeService.newTopic();
+  }
+
+  /// Instantiate a new channel-enabled group topic. An actual name will be assigned by the server
+  Topic newChannel() {
+    return _tinodeService.newTopic();
+  }
+
+  /// Generate unique name like 'new123456' suitable for creating a new group topic
+  String newGroupTopicName(bool isChan) {
+    return _tinodeService.newGroupTopicName(isChan);
+  }
+
+  /// Instantiate a new P2P topic with a given peer
+  Topic newTopicWith(String peerUserId) {
+    return _tinodeService.newTopicWith(peerUserId);
+  }
+
+  /// Instantiate 'me' topic or get it from cache
   TopicMe getMeTopic() {
     return _tinodeService.getTopic(topic_names.TOPIC_ME);
+  }
+
+  /// Instantiate 'fnd' (find) topic or get it from cache
+  TopicFnd getFndTopic() {
+    return _tinodeService.getTopic(topic_names.TOPIC_FND);
+  }
+
+  /// Get the user id of the the current authenticated user
+  String getCurrentUserId() {
+    return _authService.userId;
+  }
+
+  /// Check if the given user ID is equal to the current user's user id
+  bool isMe(String userId) {
+    return _authService.userId == userId;
+  }
+
+  /// Get login (user id) used for last successful authentication.
+  String getCurrentLogin() {
+    return _authService.lastLogin;
+  }
+
+  /// Return information about the server: protocol, version, limits, and build timestamp
+  ServerConfiguration getServerInfo() {
+    return _configService.serverConfiguration;
+  }
+
+  /// Enable or disable logger service
+  void enableLogger(bool enabled) {
+    _configService.loggerEnabled = enabled;
+  }
+
+  /// Set UI language to report to the server. Must be called before 'hi' is sent, otherwise it will not be used
+  void setHumanLanguage(String language) {
+    _configService.humanLanguage = language;
   }
 
   /// Instantiate a new group topic. An actual name will be assigned by the server

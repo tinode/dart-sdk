@@ -75,6 +75,6 @@ class Tools {
 
   static String makeAuthorizedURL(ConnectionOptions config, String token) {
     var base = makeBaseURL(config);
-    return base + '&token=' + token;
+    return base + '&auth=token&secret=' + token;
   }
 }

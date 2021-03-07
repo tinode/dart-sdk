@@ -29,6 +29,14 @@ class AuthService {
     _lastLogin = lastLogin;
   }
 
+  void setAuthToken(AuthToken authToken) {
+    _authToken = authToken;
+  }
+
+  void setUserId(String userId) {
+    _userId = userId;
+  }
+
   void onLoginSuccessful(Map<String, dynamic> ctrl) {
     var params = ctrl['params'];
     if (params == null || params['user'] == null) {

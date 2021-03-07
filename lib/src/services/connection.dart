@@ -76,7 +76,7 @@ class ConnectionService {
     onDisconnect.add(null);
   }
 
-  /// Send network probe to check if connection is indeed live.
+  /// Send network probe to check if connection is indeed live
   void probe() {
     return sendText('1');
   }

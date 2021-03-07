@@ -174,6 +174,7 @@ class TinodeService {
       data.cred = params.cred;
       data.token = params.token;
 
+      data.desc = {};
       data.desc['defacs'] = params.defacs;
       data.desc['public'] = params.public;
       data.desc['private'] = params.private;
@@ -211,6 +212,22 @@ class TinodeService {
     return topic;
   }
 
+  Topic newTopic() {
+    return Topic(TopicNames.TOPIC_NEW);
+  }
+
+  Topic newChannel() {
+    return Topic(TopicNames.TOPIC_NEW_CHAN);
+  }
+
+  String newGroupTopicName(bool isChan) {
+    return (isChan ? TopicNames.TOPIC_NEW_CHAN : TopicNames.TOPIC_NEW) + Tools.getNextUniqueId();
+  }
+
+  Topic newTopicWith(String peerUserId) {
+    return Topic(peerUserId);
+  }
+
   Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
     var packet = _packetGenerator.generate(PacketTypes.Sub, topicName);
     SubPacketData data = packet.data;
@@ -230,7 +247,7 @@ class TinodeService {
         if (Tools.isNewGroupTopicName(topicName)) {
           // Full set.desc params are used for new topics only
           data.set.desc = setParams.desc;
-        } else if (Tools.topicType(topicName) == 'p2p' && setParams.desc.defacs != null) {
+        } else if (Tools.isP2PTopicName(topicName) && setParams.desc.defacs != null) {
           // Use optional default permissions only.
           data.set.desc = SetDesc(defacs: setParams.desc.defacs);
         }
