@@ -168,6 +168,7 @@ class Tinode {
 
     if (input == '0') {
       onNetworkProbe.add(null);
+      return;
     }
 
     var pkt = jsonDecode(input, reviver: Tools.jsonParserHelper);
