@@ -153,7 +153,10 @@ class TinodeService {
     return future;
   }
 
-  Future hello() {
+  Future hello({String deviceToken}) {
+    if (deviceToken != null) {
+      _configService.deviceToken = deviceToken;
+    }
     var packet = _packetGenerator.generate(PacketTypes.Hi, null);
     return _send(packet);
   }

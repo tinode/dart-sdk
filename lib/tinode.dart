@@ -240,10 +240,20 @@ class Tinode {
   /// * Device token for notifications
   /// * Language
   /// * Platform
-  Future hello() async {
-    var ctrl = await _tinodeService.hello();
+  Future hello({String deviceToken}) async {
+    var ctrl;
+    if (deviceToken != null) {
+      ctrl = await _tinodeService.hello(deviceToken: deviceToken);
+    } else {
+      ctrl = await _tinodeService.hello();
+    }
     _configService.setServerConfiguration(ctrl['params']);
     return ctrl;
+  }
+
+  /// Wrapper for `hello`, sends hi packet again containing device token
+  Future setDeviceToken(String deviceToken) {
+    return hello(deviceToken: deviceToken);
   }
 
   /// Create or update an account
