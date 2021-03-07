@@ -2,7 +2,10 @@ import 'package:tinode/src/models/configuration.dart';
 
 import 'dart:io' show Platform;
 
+import 'package:tinode/src/models/server-configuration.dart';
+
 class ConfigService {
+  ServerConfiguration _serverConfiguration;
   AppSettings _appSettings;
   String humanLanguage;
   String deviceToken;
@@ -50,5 +53,18 @@ class ConfigService {
     } else {
       return 'Unknown';
     }
+  }
+
+  void setServerConfiguration(Map<String, dynamic> configuration) {
+    _serverConfiguration = ServerConfiguration(
+      build: configuration['build'],
+      maxFileUploadSize: configuration['maxFileUploadSize'],
+      maxMessageSize: configuration['maxMessageSize'],
+      maxSubscriberCount: configuration['maxSubscriberCount'],
+      maxTagCount: configuration['maxTagCount'],
+      maxTagLength: configuration['maxTagLength'],
+      minTagLength: configuration['minTagLength'],
+      ver: configuration['ver'],
+    );
   }
 }

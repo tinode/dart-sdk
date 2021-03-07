@@ -240,8 +240,10 @@ class Tinode {
   /// * Device token for notifications
   /// * Language
   /// * Platform
-  Future hello() {
-    return _tinodeService.hello();
+  Future hello() async {
+    var ctrl = await _tinodeService.hello();
+    _configService.setServerConfiguration(ctrl['params']);
+    return ctrl;
   }
 
   /// Create or update an account
