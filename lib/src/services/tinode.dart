@@ -63,7 +63,7 @@ class TinodeService {
     if (ctrl['code'] == 205 && ctrl['text'] == 'evicted') {
       Topic topic = _cacheManager.get('topic', ctrl['topic']);
       if (topic != null) {
-        topic.resetSub();
+        topic.resetSubscription();
       }
     }
 

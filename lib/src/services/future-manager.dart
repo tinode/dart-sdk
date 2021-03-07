@@ -36,7 +36,7 @@ class FutureManager {
     }
   }
 
-  void _checkExpiredFutures() {
+  void checkExpiredFutures() {
     var exception = Exception('Timeout (504)');
     var expires = DateTime.now().subtract(Duration(milliseconds: _configService.appSettings.expireFuturesTimeout));
 
@@ -56,7 +56,7 @@ class FutureManager {
       return;
     }
     _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: _configService.appSettings.expireFuturesPeriod), (_) {
-      _checkExpiredFutures();
+      checkExpiredFutures();
     });
   }
 

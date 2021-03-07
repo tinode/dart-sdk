@@ -75,4 +75,9 @@ class ConnectionService {
     _ws.close(status.goingAway);
     onDisconnect.add(null);
   }
+
+  /// Send network probe to check if connection is indeed live.
+  void probe() {
+    return sendText('1');
+  }
 }

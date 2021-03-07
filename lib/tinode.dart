@@ -120,6 +120,7 @@ class Tinode {
     });
 
     _onConnectedSubscription ??= _connectionService.onOpen.listen((_) {
+      _futureManager.checkExpiredFutures();
       onConnected.add(null);
     });
 
@@ -146,7 +147,7 @@ class Tinode {
     _cacheManager.map((String key, dynamic value) {
       if (key.contains('topic:')) {
         Topic topic = value;
-        topic.resetSub();
+        topic.resetSubscription();
       }
     });
     onDisconnect.add(null);
@@ -204,19 +205,24 @@ class Tinode {
     _connectionService.disconnect();
   }
 
+  /// Send a network probe message to make sure the connection is alive
+  void networkProbe() {
+    _connectionService.probe();
+  }
+
   /// Is current connection open
   bool get isConnected {
     return _connectionService.isConnected;
   }
 
-  /// Enable or disable logger service
-  void enableLogger(bool enabled) {
-    _configService.loggerEnabled = enabled;
-  }
-
   /// Specifies if user is authenticated
   bool get isAuthenticated {
     return _authService.isAuthenticated;
+  }
+
+  /// Enable or disable logger service
+  void enableLogger(bool enabled) {
+    _configService.loggerEnabled = enabled;
   }
 
   /// Current user token

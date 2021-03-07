@@ -138,7 +138,7 @@ class Topic {
     }
 
     var ctrl = await _tinodeService.leave(name, unsubscribe);
-    resetSub();
+    resetSubscription();
     if (unsubscribe) {
       _cacheManager.delete('topic', name);
       gone();
@@ -336,7 +336,7 @@ class Topic {
 
   Future deleteTopic(bool hard) async {
     var ctrl = await _tinodeService.deleteTopic(name, hard);
-    resetSub();
+    resetSubscription();
     gone();
     return ctrl;
   }
@@ -409,11 +409,14 @@ class Topic {
     }
   }
 
+  void resetSubscription() {
+    _subscribed = false;
+  }
+
   startMetaQuery() {}
   gone() {}
   flushMessage(int a) {}
   flushMessageRange(int a, int b) {}
-  resetSub() {}
   updateDeletedRanges() {}
   processMetaCreds(List<dynamic> a, bool b) {}
   swapMessageId(Message m, int newSeqId) {}
