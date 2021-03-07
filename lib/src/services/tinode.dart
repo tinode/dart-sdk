@@ -61,21 +61,21 @@ class TinodeService {
     }
 
     if (ctrl['code'] == 205 && ctrl['text'] == 'evicted') {
-      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      Topic topic = _cacheManager.get('topic', ctrl['topic']);
       if (topic != null) {
         topic.resetSub();
       }
     }
 
     if (ctrl['params'] != null && ctrl['params']['what'] == 'data') {
-      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      Topic topic = _cacheManager.get('topic', ctrl['topic']);
       if (topic != null) {
         topic.allMessagesReceived(ctrl['params']['count']);
       }
     }
 
     if (ctrl['params'] != null && ctrl['params']['what'] == 'sub') {
-      Topic topic = _cacheManager.cacheGet('topic', ctrl['topic']);
+      Topic topic = _cacheManager.get('topic', ctrl['topic']);
       if (topic != null) {
         topic.processMetaSub([]);
       }
@@ -86,7 +86,7 @@ class TinodeService {
     var meta = packet['meta'];
     onMetaMessage.add(meta);
 
-    Topic topic = _cacheManager.cacheGet('topic', meta['topic']);
+    Topic topic = _cacheManager.get('topic', meta['topic']);
     if (topic != null) {
       topic.routeMeta(meta);
     }
@@ -100,7 +100,7 @@ class TinodeService {
     var data = packet['data'];
     onDataMessage.add(data);
 
-    Topic topic = _cacheManager.cacheGet('topic', data['topic']);
+    Topic topic = _cacheManager.get('topic', data['topic']);
     if (topic != null) {
       topic.routeMeta(data);
     }
@@ -110,7 +110,7 @@ class TinodeService {
     var pres = packet['pres'];
     onPresMessage.add(pres);
 
-    Topic topic = _cacheManager.cacheGet('topic', pres['topic']);
+    Topic topic = _cacheManager.get('topic', pres['topic']);
     if (topic != null) {
       topic.routePres(pres);
     }
@@ -119,7 +119,7 @@ class TinodeService {
   void handleInfoMessage(dynamic packet) {
     var info = packet['info'];
 
-    Topic topic = _cacheManager.cacheGet('topic', info['topic']);
+    Topic topic = _cacheManager.get('topic', info['topic']);
     if (topic != null) {
       topic.routeInfo(info);
     }
@@ -194,7 +194,7 @@ class TinodeService {
   }
 
   Topic getTopic(String topicName) {
-    Topic topic = _cacheManager.cacheGet('topic', topicName);
+    Topic topic = _cacheManager.get('topic', topicName);
     if (topic == null && topicName != null) {
       if (topicName == TopicNames.TOPIC_ME) {
         topic = TopicMe();
@@ -203,7 +203,7 @@ class TinodeService {
       } else {
         topic = Topic(topicName);
       }
-      _cacheManager.cachePut('topic', topicName, topic);
+      _cacheManager.put('topic', topicName, topic);
     }
     return topic;
   }
@@ -321,7 +321,7 @@ class TinodeService {
     data.hard = hard;
     packet.data = data;
     var ctrl = await _send(packet);
-    _cacheManager.cacheDel('topic', topicName);
+    _cacheManager.delete('topic', topicName);
     return ctrl;
   }
 

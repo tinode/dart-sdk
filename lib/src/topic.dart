@@ -140,7 +140,7 @@ class Topic {
     var ctrl = await _tinodeService.leave(name, unsubscribe);
     resetSub();
     if (unsubscribe) {
-      _cacheManager.cacheDel('topic', name);
+      _cacheManager.delete('topic', name);
       gone();
     }
     return ctrl;
@@ -403,9 +403,9 @@ class Topic {
   }
 
   dynamic userDesc(String uid) {
-    var user = _cacheManager.cacheGetUser(uid);
-    if (user) {
-      return user; // Promise.resolve(user)
+    var user = _cacheManager.getUser(uid);
+    if (user != null) {
+      return user;
     }
   }
 
