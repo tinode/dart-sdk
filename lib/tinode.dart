@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/server-configuration.dart';
 
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
@@ -461,13 +462,15 @@ class Tinode {
     _configService.humanLanguage = language;
   }
 
-  /// Instantiate a new group topic. An actual name will be assigned by the server
-  Topic createTopic() {
-    return Topic(topic_names.TOPIC_NEW);
+  /// Check if given topic is online
+  bool isTopicOnline(String topicName) {
+    // TODO: Needs implementation of me topic
+    return false;
   }
 
-  /// Instantiate a new channel-enabled group topic. An actual name will be assigned by the server
-  Topic createChannel() {
-    return Topic(topic_names.TOPIC_NEW_CHAN);
+  /// Get access mode for the given contact
+  AccessMode getTopicAccessMode() {
+    // TODO: Needs implementation of me topic
+    return AccessMode('');
   }
 }
