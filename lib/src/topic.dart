@@ -41,6 +41,7 @@ class Topic {
 
   PublishSubject onData = PublishSubject<dynamic>();
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
+  PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -422,7 +423,18 @@ class Topic {
   swapMessageId(Message m, int newSeqId) {}
   processMetaDesc(SetDesc a) {}
   processMetaTags(List<String> a) {}
-  allMessagesReceived(int count) {}
+
+  /// Calculate ranges of missing messages
+  void _updateDeletedRanges() {
+    /// FIXME: Needs In-memory sorted cache
+  }
+
+  /// This should be called by `library` when all messages are received
+  void allMessagesReceived(int count) {
+    _updateDeletedRanges();
+    onAllMessagesReceived.add(count);
+  }
+
   processMetaSub(List<dynamic> a) {}
   routeMeta(dynamic a) {}
   routeData(dynamic a) {}
