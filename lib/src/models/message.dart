@@ -7,6 +7,7 @@ import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 
 class Message {
+  int hi;
   int seq;
   bool echo;
   int _status;

@@ -8,6 +8,7 @@ import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/services/auth.dart';
+import 'package:tinode/src/sorted-cache.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
@@ -28,11 +29,18 @@ class Topic {
   DateTime updated;
   bool _subscribed;
   dynamic private;
-  int maxSeq = 0;
   int maxDel = 0;
   List<String> tags;
-  bool noEarlierMsgs;
   Map<String, dynamic> users = {};
+
+  int seq;
+  int _maxSeq = 0;
+  int _minSeq = 0;
+  bool _noEarlierMsgs;
+
+  final SortedCache<Message> _messages = SortedCache<Message>((a, b) {
+    return a.seq - b.seq;
+  }, true);
 
   AuthService _authService;
   CacheManager _cacheManager;
@@ -161,7 +169,7 @@ class Topic {
       query.withEarlierData(limit);
       promise = promise.then((ctrl) {
         if (ctrl != null && ctrl['params'] != null && (ctrl['params']['count'] == null || ctrl.params.count == 0)) {
-          noEarlierMsgs = true;
+          _noEarlierMsgs = true;
         }
       });
     }
@@ -266,7 +274,7 @@ class Topic {
           toSend.add(r);
         } else {
           // Clip hi to max allowed value.
-          toSend.add(DelRange(low: r.low, hi: maxSeq + 1));
+          toSend.add(DelRange(low: r.low, hi: _maxSeq + 1));
         }
       }
     });
@@ -302,11 +310,11 @@ class Topic {
   }
 
   Future deleteMessagesAll(bool hard) {
-    if (maxSeq == 0 || maxSeq <= 0) {
+    if (_maxSeq == 0 || _maxSeq <= 0) {
       // There are no messages to delete.
       return Future.value();
     }
-    return deleteMessages([DelRange(low: 1, hi: maxSeq + 1, all: true)], hard);
+    return deleteMessages([DelRange(low: 1, hi: _maxSeq + 1, all: true)], hard);
   }
 
   Future deleteMessagesList(List<int> list, bool hard) {
@@ -389,7 +397,7 @@ class Topic {
   }
 
   void noteRead(int seq) {
-    seq = seq ?? maxSeq;
+    seq = seq ?? _maxSeq;
     if (seq > 0) {
       note('read', seq);
     }
@@ -424,11 +432,6 @@ class Topic {
   processMetaDesc(SetDesc a) {}
   processMetaTags(List<String> a) {}
 
-  /// Calculate ranges of missing messages
-  void _updateDeletedRanges() {
-    /// FIXME: Needs In-memory sorted cache
-  }
-
   /// This should be called by `library` when all messages are received
   void allMessagesReceived(int count) {
     _updateDeletedRanges();
@@ -440,4 +443,84 @@ class Topic {
   routeData(dynamic a) {}
   routePres(dynamic a) {}
   routeInfo(dynamic a) {}
+
+  /// Calculate ranges of missing messages
+  void _updateDeletedRanges() {
+    var ranges = [];
+    var prev;
+
+    // Check for gap in the beginning, before the first message.
+    var first = _messages.getAt(0);
+
+    if (first != null && _minSeq > 1 && !_noEarlierMsgs) {
+      // Some messages are missing in the beginning.
+      if (first.hi > 0) {
+        // The first message already represents a gap.
+        if (first.seq > 1) {
+          first.seq = 1;
+        }
+        if (first.hi < _minSeq - 1) {
+          first.hi = _minSeq - 1;
+        }
+        prev = first;
+      } else {
+        // Create new gap.
+        prev = {'seq': 1, 'hi': _minSeq - 1};
+        ranges.add(prev);
+      }
+    } else {
+      // No gap in the beginning.
+      prev = {'seq': 0, 'hi': 0};
+    }
+
+    // Find gaps in the list of received messages. The list contains messages-proper as well
+    // as placeholders for deleted ranges.
+    // The messages are iterated by seq ID in ascending order.
+    _messages.forEach((data, i) {
+      // Do not create a gap between the last sent message and the first unsent.
+      if (data.seq >= _configService.appSettings.localSeqId) {
+        return;
+      }
+
+      // New message is reducing the existing gap
+      if (data.seq == (prev['hi'] > 0 ? prev['hi'] : prev.seq) + 1) {
+        // No new gap. Replace previous with current.
+        prev = data;
+        return;
+      }
+
+      // Found a new gap.
+      if (prev['hi']) {
+        // Previous is also a gap, alter it.
+        prev['hi'] = data.hi > 0 ? data.hi : data.seq;
+        return;
+      }
+
+      // Previous is not a gap. Create a new gap.
+      prev = {
+        'seq': (data.hi > 0 ? data.hi : data.seq) + 1,
+        'hi': data.hi > 0 ? data.hi : data.seq,
+      };
+      ranges.add(prev);
+    }, null, null);
+
+    // Check for missing messages at the end.
+    // All messages could be missing or it could be a new topic with no messages.
+    var last = _messages.getLast();
+    var maxSeq = max(seq, _maxSeq) ?? 0;
+    if ((maxSeq > 0 && last == null) || (last != null && ((last.hi > 0 ? last.hi : last.seq) < maxSeq))) {
+      if (last != null && last.hi > 0) {
+        // Extend existing gap
+        last.hi = maxSeq;
+      } else {
+        // Create new gap.
+        ranges.add({'seq': last != null ? last.seq + 1 : 1, 'hi': maxSeq});
+      }
+    }
+
+    // Insert new gaps into cache.
+    ranges.map((gap) {
+      _messages.put(gap);
+    });
+  }
 }
