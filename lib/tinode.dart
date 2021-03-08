@@ -5,10 +5,9 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tinode/src/models/access-mode.dart';
-import 'package:tinode/src/models/server-configuration.dart';
 
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
+import 'package:tinode/src/models/server-configuration.dart';
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 export 'package:tinode/src/models/connection-options.dart';
@@ -18,6 +17,7 @@ import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/account-params.dart';
 export 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/services/connection.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/models/auth-token.dart';
 import 'package:tinode/src/models/del-range.dart';
@@ -193,6 +193,7 @@ class Tinode {
     }
   }
 
+  // Get app version
   String get version {
     return _configService.appVersion;
   }

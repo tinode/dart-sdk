@@ -1,8 +1,7 @@
-import 'package:tinode/src/models/configuration.dart';
-
 import 'dart:io' show Platform;
 
 import 'package:tinode/src/models/server-configuration.dart';
+import 'package:tinode/src/models/configuration.dart';
 
 class ConfigService {
   ServerConfiguration _serverConfiguration;
@@ -15,13 +14,14 @@ class ConfigService {
 
   ConfigService(bool loggerEnabled) {
     _appSettings = AppSettings(
-        localSeqId: 0xFFFFFFF,
-        networkError: 503,
-        errorText: 'Connection failed',
-        expireFuturesTimeout: 5000,
-        expireFuturesPeriod: 1000,
-        networkUser: 418,
-        networkUserText: 'Disconnected by client');
+      localSeqId: 0xFFFFFFF,
+      networkError: 503,
+      errorText: 'Connection failed',
+      expireFuturesTimeout: 5000,
+      expireFuturesPeriod: 1000,
+      networkUser: 418,
+      networkUserText: 'Disconnected by client',
+    );
 
     deviceToken = null;
     appVersion = '1.16.0';
