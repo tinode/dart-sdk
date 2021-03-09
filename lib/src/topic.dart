@@ -13,6 +13,7 @@ import 'package:tinode/src/topic-me.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
+import 'models/server-messages.dart';
 import 'models/set-params.dart';
 import 'models/del-range.dart';
 import 'models/get-query.dart';
@@ -466,7 +467,7 @@ class Topic {
     }
   }
 
-  routeMeta(dynamic a) {}
+  void routeMeta(MetaMessage meta) {}
   routeData(dynamic a) {}
   routePres(dynamic a) {}
   routeInfo(dynamic a) {}

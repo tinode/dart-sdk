@@ -186,8 +186,8 @@ class Tinode {
 
     if (message.ctrl != null) {
       _tinodeService.handleCtrlMessage(message.ctrl);
-    } else if (pkt['meta'] != null) {
-      _tinodeService.handleMetaMessage(pkt);
+    } else if (message.meta != null) {
+      _tinodeService.handleMetaMessage(message.meta);
     } else if (pkt['data'] != null) {
       _tinodeService.handleDataMessage(pkt);
     } else if (pkt['pres'] != null) {

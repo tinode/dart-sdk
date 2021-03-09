@@ -105,17 +105,16 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `meta`
-  void handleMetaMessage(dynamic packet) {
-    var meta = packet['meta'];
+  void handleMetaMessage(MetaMessage meta) {
     onMetaMessage.add(meta);
 
-    Topic topic = _cacheManager.get('topic', meta['topic']);
+    Topic topic = _cacheManager.get('topic', meta.topic);
     if (topic != null) {
       topic.routeMeta(meta);
     }
 
-    if (meta['id'] != null) {
-      _futureManager.execFuture(meta['id'], 200, meta, 'META');
+    if (meta.id != null) {
+      _futureManager.execFuture(meta.id, 200, meta, 'META');
     }
   }
 
