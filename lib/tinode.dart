@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tinode/src/models/server-messages.dart';
 
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/server-configuration.dart';
@@ -73,7 +74,7 @@ class Tinode {
   PublishSubject<void> onNetworkProbe = PublishSubject<void>();
 
   /// `onMessage` event will be triggered when a message is received
-  PublishSubject<dynamic> onMessage = PublishSubject<dynamic>();
+  PublishSubject<ServerMessage> onMessage = PublishSubject<ServerMessage>();
 
   /// `onRawMessage` event will be triggered when a message is received value will be a json
   PublishSubject<String> onRawMessage = PublishSubject<String>();
@@ -177,11 +178,14 @@ class Tinode {
       return;
     }
 
-    // Send complete packet to listener
-    onMessage.add(pkt);
+    /// Decode map into model
+    var message = ServerMessage.fromMessage(pkt);
 
-    if (pkt['ctrl'] != null) {
-      _tinodeService.handleCtrlMessage(pkt);
+    // Send complete packet to listener
+    onMessage.add(message);
+
+    if (message.ctrl != null) {
+      _tinodeService.handleCtrlMessage(message.ctrl);
     } else if (pkt['meta'] != null) {
       _tinodeService.handleMetaMessage(pkt);
     } else if (pkt['data'] != null) {
@@ -441,7 +445,7 @@ class Tinode {
 
   /// Check if the given user ID is equal to the current user's user id
   bool isMe(String userId) {
-    return _authService.userId == userId;
+    return _tinodeService.isMe(userId);
   }
 
   /// Get login (user id) used for last successful authentication.
