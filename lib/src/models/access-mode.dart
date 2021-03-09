@@ -11,6 +11,7 @@ int INVALID = 0x100000;
 
 var AccessModePermissionsBITMASK = JOIN | READ | WRITE | PRES | APPROVE | SHARE | DELETE | OWNER;
 
+/// Actual access and permission
 class AccessMode {
   int _given;
   int _want;

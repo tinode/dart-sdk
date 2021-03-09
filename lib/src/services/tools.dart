@@ -73,6 +73,7 @@ class Tools {
     return (topicName is String) && (prefix == topic_names.TOPIC_CHAN || prefix == topic_names.TOPIC_NEW_CHAN);
   }
 
+  /// Create authorized URL
   static String makeAuthorizedURL(ConnectionOptions config, String token) {
     var base = makeBaseURL(config);
     return base + '&auth=token&secret=' + token;

@@ -31,13 +31,13 @@ class Topic {
   dynamic private;
   int maxDel = 0;
   List<String> tags;
-  Map<String, dynamic> users = {};
 
   int seq;
   int _maxSeq = 0;
   int _minSeq = 0;
   bool _noEarlierMsgs;
 
+  Map<String, CacheUser> users = {};
   final SortedCache<Message> _messages = SortedCache<Message>((a, b) {
     return a.seq - b.seq;
   }, true);
@@ -48,6 +48,7 @@ class Topic {
   ConfigService _configService;
 
   PublishSubject onData = PublishSubject<dynamic>();
+  PublishSubject onMetaSub = PublishSubject<CacheUser>();
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
@@ -220,7 +221,7 @@ class Topic {
     return ctrl;
   }
 
-  dynamic subscriber(String userId) {
+  CacheUser subscriber(String userId) {
     return users[userId];
   }
 
@@ -373,11 +374,11 @@ class Topic {
     var user = users[_authService.userId];
 
     var update = false;
-    if (user) {
-      if (!user[what] || user[what] < seq) {
-        user[what] = seq;
-        update = true;
-      }
+    if (user != null) {
+      // if (!user[what] || user[what] < seq) {
+      //   user[what] = seq;
+      //   update = true;
+      // }
     } else if (me != null) {
       // Subscriber not found, such as in case of no S permission.
       update = me.getMsgReadRecv(name, what) < seq;
@@ -432,13 +433,39 @@ class Topic {
   processMetaDesc(SetDesc a) {}
   processMetaTags(List<String> a) {}
 
-  /// This should be called by `library` when all messages are received
+  /// This should be called by `Tinode` when all messages are received
   void allMessagesReceived(int count) {
     _updateDeletedRanges();
     onAllMessagesReceived.add(count);
   }
 
-  processMetaSub(List<dynamic> a) {}
+  /// Called by `Tinode` when meta.sub is received or in response to received
+  void processMetaSub(List<dynamic> subscriptions) {
+    for (var sub in subscriptions) {
+      sub['updated'] = DateTime.parse(sub['updated']);
+      sub['deleted'] = sub['deleted'] != null ? DateTime.parse(sub['deleted']) : null;
+
+      var user;
+      if (sub['deleted'] == null) {
+        // If this is a change to user's own permissions, update them in topic too.
+        // Desc will update 'me' topic.
+        if (_tinodeService.isMe(sub['user']) && sub['acs'] != null) {
+          processMetaDesc(SetDesc(
+            updated: sub['updated'] ?? DateTime.now(),
+            touched: sub['updated'],
+            acs: sub['acs'],
+          ));
+        }
+        user = _updateCachedUser(sub['user'], sub);
+      } else {
+        users.remove(sub['user']);
+        user = sub;
+      }
+
+      onMetaSub.add(user);
+    }
+  }
+
   routeMeta(dynamic a) {}
   routeData(dynamic a) {}
   routePres(dynamic a) {}
@@ -522,5 +549,16 @@ class Topic {
     ranges.map((gap) {
       _messages.put(gap);
     });
+  }
+
+  /// Update global user cache and local subscribers cache
+  /// Don't call this method for non-subscribers
+  CacheUser _updateCachedUser(String userId, Map<String, dynamic> object) {
+    var cached = _cacheManager.getUser(userId);
+    var merged = {}..addAll(cached.public)..addAll(object);
+
+    // _cacheManager.putUser(userId, CacheUser(merged, userId));
+    // users[userId] = CacheUser(merged, userId);
+    return users[userId];
   }
 }

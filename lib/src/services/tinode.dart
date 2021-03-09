@@ -7,6 +7,7 @@ import 'package:tinode/src/models/packet-types.dart' as packet_types;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/services/future-manager.dart';
+import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/models/account-params.dart';
@@ -48,7 +49,7 @@ class TinodeService {
   AuthService _authService;
 
   /// This event will be triggered when a `ctrl` message is received
-  PublishSubject<dynamic> onCtrlMessage = PublishSubject<dynamic>();
+  PublishSubject<CtrlMessage> onCtrlMessage = PublishSubject<CtrlMessage>();
 
   /// This event will be triggered when a `meta` message is received
   PublishSubject<dynamic> onMetaMessage = PublishSubject<dynamic>();
@@ -74,30 +75,29 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `ctrl`
-  void handleCtrlMessage(dynamic packet) {
-    var ctrl = packet['ctrl'];
+  void handleCtrlMessage(CtrlMessage ctrl) {
     onCtrlMessage.add(ctrl);
 
-    if (ctrl['id'] != null && ctrl['id'] != 0) {
-      _futureManager.execFuture(ctrl['id'], ctrl['code'], ctrl, ctrl['text']);
+    if (ctrl.id != null && ctrl.id != '') {
+      _futureManager.execFuture(ctrl.id, ctrl.code, ctrl, ctrl.text);
     }
 
-    if (ctrl['code'] == 205 && ctrl['text'] == 'evicted') {
-      Topic topic = _cacheManager.get('topic', ctrl['topic']);
+    if (ctrl.code == 205 && ctrl.text == 'evicted') {
+      Topic topic = _cacheManager.get('topic', ctrl.topic);
       if (topic != null) {
         topic.resetSubscription();
       }
     }
 
-    if (ctrl['params'] != null && ctrl['params']['what'] == 'data') {
-      Topic topic = _cacheManager.get('topic', ctrl['topic']);
+    if (ctrl.params != null && ctrl.params['what'] == 'data') {
+      Topic topic = _cacheManager.get('topic', ctrl.topic);
       if (topic != null) {
-        topic.allMessagesReceived(ctrl['params']['count']);
+        topic.allMessagesReceived(ctrl.params['count']);
       }
     }
 
-    if (ctrl['params'] != null && ctrl['params']['what'] == 'sub') {
-      Topic topic = _cacheManager.get('topic', ctrl['topic']);
+    if (ctrl.params != null && ctrl.params['what'] == 'sub') {
+      Topic topic = _cacheManager.get('topic', ctrl.topic);
       if (topic != null) {
         topic.processMetaSub([]);
       }
@@ -434,5 +434,10 @@ class TinodeService {
     data.what = 'kp';
     packet.data = data;
     return _send(packet);
+  }
+
+  /// Check if the given user ID is equal to the current user's user id
+  bool isMe(String userId) {
+    return _authService.userId == userId;
   }
 }

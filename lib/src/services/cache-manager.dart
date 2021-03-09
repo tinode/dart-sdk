@@ -1,16 +1,18 @@
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/topic.dart';
 
 /// This is a data structure for user's data in cache
 class CacheUser {
   final Map<String, dynamic> public;
   final String userId;
+  final AccessMode acs;
 
   /// Creates a new instance of cache user
-  CacheUser(this.public, this.userId);
+  CacheUser(this.public, this.userId, this.acs);
 
   /// Create a copy of this instance
   CacheUser copy() {
-    return CacheUser(public, userId);
+    return CacheUser(public, userId, acs);
   }
 }
 
@@ -25,7 +27,7 @@ class CacheManager {
   }
 
   /// Get a specific data from cache using type and name
-  dynamic get(String type, String name) {
+  get(String type, String name) {
     return _cache[type + ':' + name];
   }
 
@@ -41,11 +43,11 @@ class CacheManager {
 
   /// This is a wrapper for `get` function which gets a user from cache by userId
   CacheUser getUser(String userId) {
-    var pub = get('user', userId);
+    CacheUser pub = get('user', userId);
     if (pub != null) {
-      return CacheUser(pub, userId);
+      return pub;
     }
-    return null;
+    return get('user', userId);
   }
 
   /// This is a wrapper for `put` function which puts a user into cache by userId
