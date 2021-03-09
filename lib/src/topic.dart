@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:tinode/src/models/message-status.dart' as MessageStatus;
-import 'package:tinode/src/models/topic-names.dart' as TopicNames;
+import 'package:tinode/src/models/message-status.dart' as message_status;
+import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
@@ -20,8 +20,6 @@ import 'models/get-query.dart';
 import 'models/message.dart';
 import 'models/values.dart';
 
-/// TODO: Implement `attachCacheToTopic` too
-
 class Topic {
   bool _new;
   String name;
@@ -34,8 +32,8 @@ class Topic {
   List<String> tags;
 
   int seq;
-  int _maxSeq = 0;
-  int _minSeq = 0;
+  final int _maxSeq = 0;
+  final int _minSeq = 0;
   bool _noEarlierMsgs;
 
   Map<String, CacheUser> users = {};
@@ -78,7 +76,7 @@ class Topic {
 
     // Send subscribe message, handle async response.
     // If topic name is explicitly provided, use it. If no name, then it's a new group topic, use "new".
-    var ctrl = await _tinodeService.subscribe(name != '' ? name : TopicNames.TOPIC_NEW, getParams, setParams);
+    var ctrl = await _tinodeService.subscribe(name != '' ? name : topic_names.TOPIC_NEW, getParams, setParams);
 
     if (ctrl['code'] >= 300) {
       // Do nothing if the topic is already subscribed to.
@@ -97,9 +95,9 @@ class Topic {
       created = ctrl['ts'];
       updated = ctrl['ts'];
 
-      if (name != TopicNames.TOPIC_ME && name != TopicNames.TOPIC_FND) {
+      if (name != topic_names.TOPIC_ME && name != topic_names.TOPIC_FND) {
         // Add the new topic to the list of contacts maintained by the 'me' topic.
-        TopicMe me = _tinodeService.getTopic(TopicNames.TOPIC_ME);
+        TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
         if (me != null) {
           me.processMetaSub([
             {'noForwarding': true, 'topic': name, 'created': ctrl['ts'], 'updated': ctrl['ts'], 'acs': acs}
@@ -124,21 +122,23 @@ class Topic {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
 
-    message.setStatus(MessageStatus.SENDING);
+    message.setStatus(message_status.SENDING);
 
     try {
       var ctrl = await _tinodeService.publishMessage(message);
       var seq = ctrl['params']['seq'];
       if (seq != null) {
-        message.setStatus(MessageStatus.SENT);
+        message.setStatus(message_status.SENT);
       }
       message.ts = ctrl['ts'];
       swapMessageId(message, seq);
-      routeData(message);
+
+      // TODO: Fix type mismatch
+      // routeData(message);
     } catch (e) {
       print('WARNING: Message rejected by the server');
       print(e.toString());
-      message.setStatus(MessageStatus.FAILED);
+      message.setStatus(message_status.FAILED);
       onData.add(null);
     }
   }
@@ -371,7 +371,7 @@ class Topic {
       return;
     }
 
-    TopicMe me = _tinodeService.getTopic(TopicNames.TOPIC_ME);
+    TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
     var user = users[_authService.userId];
 
     var update = false;
@@ -424,15 +424,15 @@ class Topic {
     _subscribed = false;
   }
 
-  startMetaQuery() {}
-  gone() {}
-  flushMessage(int a) {}
-  flushMessageRange(int a, int b) {}
-  updateDeletedRanges() {}
-  processMetaCreds(List<dynamic> a, bool b) {}
-  swapMessageId(Message m, int newSeqId) {}
-  processMetaDesc(SetDesc a) {}
-  processMetaTags(List<String> a) {}
+  dynamic startMetaQuery() {}
+  dynamic gone() {}
+  dynamic flushMessage(int a) {}
+  dynamic flushMessageRange(int a, int b) {}
+  dynamic updateDeletedRanges() {}
+  dynamic processMetaCreds(List<dynamic> a, bool b) {}
+  dynamic swapMessageId(Message m, int newSeqId) {}
+  dynamic processMetaDesc(SetDesc a) {}
+  dynamic processMetaTags(List<String> a) {}
 
   /// This should be called by `Tinode` when all messages are received
   void allMessagesReceived(int count) {
@@ -469,8 +469,8 @@ class Topic {
 
   void routeMeta(MetaMessage meta) {}
   void routeData(DataMessage data) {}
-  routePres(dynamic a) {}
-  routeInfo(dynamic a) {}
+  void routePres(dynamic a) {}
+  void routeInfo(dynamic a) {}
 
   /// Calculate ranges of missing messages
   void _updateDeletedRanges() {
