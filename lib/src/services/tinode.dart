@@ -52,10 +52,10 @@ class TinodeService {
   PublishSubject<CtrlMessage> onCtrlMessage = PublishSubject<CtrlMessage>();
 
   /// This event will be triggered when a `meta` message is received
-  PublishSubject<dynamic> onMetaMessage = PublishSubject<dynamic>();
+  PublishSubject<MetaMessage> onMetaMessage = PublishSubject<MetaMessage>();
 
   /// This event will be triggered when a `data` message is received
-  PublishSubject<dynamic> onDataMessage = PublishSubject<dynamic>();
+  PublishSubject<DataMessage> onDataMessage = PublishSubject<DataMessage>();
 
   /// This event will be triggered when a `pres` message is received
   PublishSubject<dynamic> onPresMessage = PublishSubject<dynamic>();
@@ -119,13 +119,12 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `data`
-  void handleDataMessage(dynamic packet) {
-    var data = packet['data'];
+  void handleDataMessage(DataMessage data) {
     onDataMessage.add(data);
 
-    Topic topic = _cacheManager.get('topic', data['topic']);
+    Topic topic = _cacheManager.get('topic', data.topic);
     if (topic != null) {
-      topic.routeMeta(data);
+      topic.routeData(data);
     }
   }
 

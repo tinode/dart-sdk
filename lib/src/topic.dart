@@ -468,7 +468,7 @@ class Topic {
   }
 
   void routeMeta(MetaMessage meta) {}
-  routeData(dynamic a) {}
+  void routeData(DataMessage data) {}
   routePres(dynamic a) {}
   routeInfo(dynamic a) {}
 

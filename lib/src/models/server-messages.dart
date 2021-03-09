@@ -6,13 +6,15 @@ import 'package:tinode/src/models/credential.dart';
 class ServerMessage {
   final CtrlMessage ctrl;
   final MetaMessage meta;
+  final DataMessage data;
 
-  ServerMessage({this.ctrl, this.meta});
+  ServerMessage({this.ctrl, this.meta, this.data});
 
   static ServerMessage fromMessage(Map<String, dynamic> msg) {
     return ServerMessage(
       ctrl: msg['ctrl'] != null ? CtrlMessage.fromMessage(msg['ctrl']) : null,
       meta: msg['meta'] != null ? MetaMessage.fromMessage(msg['meta']) : null,
+      data: msg['data'] != null ? DataMessage.fromMessage(msg['data']) : null,
     );
   }
 }
