@@ -58,7 +58,7 @@ class TinodeService {
   PublishSubject<DataMessage> onDataMessage = PublishSubject<DataMessage>();
 
   /// This event will be triggered when a `pres` message is received
-  PublishSubject<dynamic> onPresMessage = PublishSubject<dynamic>();
+  PublishSubject<PresMessage> onPresMessage = PublishSubject<PresMessage>();
 
   /// This event will be triggered when a `info` message is received
   PublishSubject<dynamic> onInfoMessage = PublishSubject<dynamic>();
@@ -129,11 +129,10 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `pres`
-  void handlePresMessage(dynamic packet) {
-    var pres = packet['pres'];
+  void handlePresMessage(PresMessage pres) {
     onPresMessage.add(pres);
 
-    Topic topic = _cacheManager.get('topic', pres['topic']);
+    Topic topic = _cacheManager.get('topic', pres.topic);
     if (topic != null) {
       topic.routePres(pres);
     }

@@ -8,14 +8,16 @@ class ServerMessage {
   final CtrlMessage ctrl;
   final MetaMessage meta;
   final DataMessage data;
+  final PresMessage pres;
 
-  ServerMessage({this.ctrl, this.meta, this.data});
+  ServerMessage({this.ctrl, this.meta, this.data, this.pres});
 
   static ServerMessage fromMessage(Map<String, dynamic> msg) {
     return ServerMessage(
       ctrl: msg['ctrl'] != null ? CtrlMessage.fromMessage(msg['ctrl']) : null,
       meta: msg['meta'] != null ? MetaMessage.fromMessage(msg['meta']) : null,
       data: msg['data'] != null ? DataMessage.fromMessage(msg['data']) : null,
+      pres: msg['pres'] != null ? PresMessage.fromMessage(msg['pres']) : null,
     );
   }
 }
