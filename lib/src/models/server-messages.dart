@@ -199,3 +199,34 @@ class PresMessage {
     );
   }
 }
+
+class InfoMessage {
+  /// topic affected, always present
+  final String topic;
+
+  /// id of the user who published the message, always present
+  final String from;
+
+  /// string, one of "kp", "recv", "read", see client-side {note},
+  final String what;
+
+  /// ID of the message that client has acknowledged,
+  /// guaranteed 0 < read <= recv <= {ctrl.params.seq}; present for rcpt & read
+  final int seq;
+
+  InfoMessage({
+    this.topic,
+    this.from,
+    this.what,
+    this.seq,
+  });
+
+  static InfoMessage fromMessage(Map<String, dynamic> msg) {
+    return InfoMessage(
+      topic: msg['topic'],
+      from: msg['from'],
+      what: msg['what'],
+      seq: msg['seq'],
+    );
+  }
+}
