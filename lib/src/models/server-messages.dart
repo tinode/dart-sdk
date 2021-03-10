@@ -9,8 +9,9 @@ class ServerMessage {
   final MetaMessage meta;
   final DataMessage data;
   final PresMessage pres;
+  final InfoMessage info;
 
-  ServerMessage({this.ctrl, this.meta, this.data, this.pres});
+  ServerMessage({this.ctrl, this.meta, this.data, this.pres, this.info});
 
   static ServerMessage fromMessage(Map<String, dynamic> msg) {
     return ServerMessage(
@@ -18,6 +19,7 @@ class ServerMessage {
       meta: msg['meta'] != null ? MetaMessage.fromMessage(msg['meta']) : null,
       data: msg['data'] != null ? DataMessage.fromMessage(msg['data']) : null,
       pres: msg['pres'] != null ? PresMessage.fromMessage(msg['pres']) : null,
+      info: msg['info'] != null ? InfoMessage.fromMessage(msg['info']) : null,
     );
   }
 }

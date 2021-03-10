@@ -470,7 +470,7 @@ class Topic {
   void routeMeta(MetaMessage meta) {}
   void routeData(DataMessage data) {}
   void routePres(PresMessage pres) {}
-  void routeInfo(dynamic a) {}
+  void routeInfo(InfoMessage info) {}
 
   /// Calculate ranges of missing messages
   void _updateDeletedRanges() {

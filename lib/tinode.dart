@@ -192,8 +192,8 @@ class Tinode {
       _tinodeService.handleDataMessage(message.data);
     } else if (message.pres != null) {
       _tinodeService.handlePresMessage(message.pres);
-    } else if (pkt['info'] != null) {
-      _tinodeService.handleInfoMessage(pkt);
+    } else if (message.info != null) {
+      _tinodeService.handleInfoMessage(message.info);
     }
   }
 

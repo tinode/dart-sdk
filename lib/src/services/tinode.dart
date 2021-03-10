@@ -139,10 +139,8 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `info`
-  void handleInfoMessage(dynamic packet) {
-    var info = packet['info'];
-
-    Topic topic = _cacheManager.get('topic', info['topic']);
+  void handleInfoMessage(InfoMessage info) {
+    Topic topic = _cacheManager.get('topic', info.topic);
     if (topic != null) {
       topic.routeInfo(info);
     }
