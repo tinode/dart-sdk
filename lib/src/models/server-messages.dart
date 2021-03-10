@@ -1,3 +1,4 @@
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/topic-description.dart';
@@ -91,9 +92,13 @@ class MetaMessage {
       topic: msg['topic'],
       ts: msg['ts'] != null ? DateTime.parse(msg['ts']) : DateTime.now(),
       desc: TopicDescription.fromMessage(msg['desc']),
-      sub: msg['sub'] != null && msg['sub'].length != null ? msg['sub'].map((Map<String, dynamic> sub) => TopicSubscription.fromMessage(sub)) : [],
+      sub: msg['sub'] != null && msg['sub'].length != null
+          ? msg['sub'].map((Map<String, dynamic> sub) => TopicSubscription.fromMessage(sub)).toList()
+          : [],
       tags: msg['tags'],
-      cred: msg['cred'] != null && msg['cred'].length != null ? msg['cred'].map((Map<String, dynamic> cred) => UserCredential.fromMessage(cred)) : [],
+      cred: msg['cred'] != null && msg['cred'].length != null
+          ? msg['cred'].map((Map<String, dynamic> cred) => UserCredential.fromMessage(cred)).toList()
+          : [],
       del: DeleteTransaction.fromMessage(msg['del']),
     );
   }
@@ -128,6 +133,67 @@ class DataMessage {
       ts: msg['ts'] != null ? DateTime.parse(msg['ts']) : null,
       seq: msg['seq'],
       content: msg['content'],
+    );
+  }
+}
+
+class PresMessage {
+  /// Topic which receives the notification, always present
+  final String topic;
+
+  /// Topic or user affected by the change, always present
+  final String src;
+
+  /// what's changed, always present
+  final String what;
+
+  /// "what" is "msg", a server-issued Id of the message, optional
+  final int seq;
+
+  /// "what" is "del", an update to the delete transaction Id.
+  final int clear;
+
+  /// Array of ranges, "what" is "del", ranges of Ids of deleted messages, optional
+  final List<DeleteTransactionRange> delseq;
+
+  /// A User Agent string identifying client
+  final String ua;
+
+  /// User who performed the action, optional
+  final String act;
+
+  /// User affected by the action, optional
+  final String tgt;
+
+  /// Changes to access mode, "what" is "acs", optional
+  final AccessMode acs;
+
+  PresMessage({
+    this.topic,
+    this.src,
+    this.what,
+    this.seq,
+    this.clear,
+    this.delseq,
+    this.ua,
+    this.act,
+    this.tgt,
+    this.acs,
+  });
+
+  static PresMessage fromMessage(Map<String, dynamic> msg) {
+    return PresMessage(
+      topic: msg['msg'],
+      src: msg['src'],
+      what: msg['what'],
+      seq: msg['seq'],
+      clear: msg['clear'],
+      delseq:
+          msg['delseq'] != null && msg['delseq'].length != null ? msg['delseq'].map((seq) => DeleteTransactionRange.fromMessage(seq)).toList() : [],
+      ua: msg['ua'],
+      act: msg['act'],
+      tgt: msg['tgt'],
+      acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
     );
   }
 }

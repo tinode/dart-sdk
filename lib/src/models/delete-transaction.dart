@@ -24,7 +24,8 @@ class DeleteTransaction {
   static DeleteTransaction fromMessage(Map<String, dynamic> msg) {
     return DeleteTransaction(
       clear: msg['clear'],
-      delseq: msg['delseq'] != null && msg['delseq'].length != null ? msg['delseq'].map((del) => DeleteTransactionRange.fromMessage(del)) : [],
+      delseq:
+          msg['delseq'] != null && msg['delseq'].length != null ? msg['delseq'].map((del) => DeleteTransactionRange.fromMessage(del)).toList() : [],
     );
   }
 }
