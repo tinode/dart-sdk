@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:tinode/src/models/credential.dart';
+import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/topic-description.dart';
@@ -63,9 +65,17 @@ class Topic {
   /// Topic touched date
   DateTime touched;
 
+  /// Last topic description update timestamp
+  DateTime _lastDescUpdate;
+
+  /// Last topic subscribers update timestamp
+  DateTime _lastSubsUpdate;
+
+  /// Max deleted message
+  int maxDel = 0;
+
   bool _new;
   bool _subscribed;
-  int maxDel = 0;
   List<String> tags;
 
   int seq;
@@ -78,8 +88,6 @@ class Topic {
     return a.seq - b.seq;
   }, true);
 
-  DateTime _lastDescUpdate;
-
   AuthService _authService;
   CacheManager _cacheManager;
   TinodeService _tinodeService;
@@ -89,6 +97,7 @@ class Topic {
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
+  PublishSubject onMeta = PublishSubject<MetaMessage>();
   PublishSubject onMetaDesc = PublishSubject<Topic>();
   PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
 
@@ -267,7 +276,7 @@ class Topic {
     }
 
     if (params.cred) {
-      processMetaCreds([params.cred], true);
+      processMetaCreds([params.cred]);
     }
 
     return ctrl;
@@ -480,39 +489,16 @@ class Topic {
   dynamic flushMessage(int a) {}
   dynamic flushMessageRange(int a, int b) {}
   dynamic updateDeletedRanges() {}
-  dynamic processMetaCreds(List<dynamic> a, bool b) {}
   dynamic swapMessageId(Message m, int newSeqId) {}
   dynamic processMetaTags(List<String> a) {}
+
+  // Do nothing for topics other than 'me'
+  dynamic processMetaCreds(List<UserCredential> cred) {}
 
   /// This should be called by `Tinode` when all messages are received
   void allMessagesReceived(int count) {
     _updateDeletedRanges();
     onAllMessagesReceived.add(count);
-  }
-
-  /// Called by `Tinode` when meta.sub is received or in response to received
-  void processMetaSub(List<TopicSubscription> subscriptions) {
-    for (var sub in subscriptions) {
-      TopicSubscription user;
-      if (sub.deleted == null) {
-        // If this is a change to user's own permissions, update them in topic too.
-        // Desc will update 'me' topic.
-        if (_tinodeService.isMe(sub.user) && sub.acs != null) {
-          /// FIXME: Type mismatch
-          processMetaDesc(TopicDescription(
-            updated: sub.updated ?? DateTime.now(),
-            touched: sub.updated,
-            acs: sub.acs,
-          ));
-        }
-        user = _updateCachedUser(sub.user, sub);
-      } else {
-        users.remove(sub.user);
-        user = sub;
-      }
-
-      onMetaSub.add(user);
-    }
   }
 
   /// Calculate ranges of missing messages
@@ -615,6 +601,25 @@ class Topic {
       _lastDescUpdate = meta.ts;
       processMetaDesc(meta.desc);
     }
+
+    if (meta.sub != null && meta.sub.isNotEmpty) {
+      _lastSubsUpdate = meta.ts;
+      processMetaSub(meta.sub);
+    }
+
+    if (meta.del != null) {
+      processDelMessages(meta.del.clear, meta.del.delseq);
+    }
+
+    if (meta.tags != null) {
+      processMetaTags(meta.tags);
+    }
+
+    if (meta.cred != null) {
+      processMetaCreds(meta.cred);
+    }
+
+    onMeta.add(meta);
   }
 
   /// Called by Tinode when meta.desc packet is received.
@@ -662,7 +667,55 @@ class Topic {
     onMetaSub.add(this);
   }
 
-  void routeData(DataMessage data) {}
+  /// Called by `Tinode` when meta.sub is received or in response to received
+  void processMetaSub(List<TopicSubscription> subscriptions) {
+    for (var sub in subscriptions) {
+      TopicSubscription user;
+      if (sub.deleted == null) {
+        // If this is a change to user's own permissions, update them in topic too.
+        // Desc will update 'me' topic.
+        if (_tinodeService.isMe(sub.user) && sub.acs != null) {
+          processMetaDesc(TopicDescription(
+            updated: sub.updated ?? DateTime.now(),
+            touched: sub.updated,
+            acs: sub.acs,
+          ));
+        }
+        user = _updateCachedUser(sub.user, sub);
+      } else {
+        users.remove(sub.user);
+        user = sub;
+      }
+
+      onMetaSub.add(user);
+    }
+  }
+
+  /// Delete cached messages and update cached transaction IDs
+  void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {
+    maxDel = max(clear, maxDel);
+    this.clear = max(clear, this.clear);
+
+    var count = 0;
+    for (var range in delseq) {
+      if (range.hi == null || range.hi == 0) {
+        count++;
+        flushMessage(range.low);
+      } else {
+        for (var i = range.low; i < range.hi; i++) {
+          count++;
+          flushMessage(i);
+        }
+      }
+    }
+
+    if (count > 0) {
+      updateDeletedRanges();
+      onData.add(null);
+    }
+  }
+
   void routePres(PresMessage pres) {}
+  void routeData(DataMessage data) {}
   void routeInfo(InfoMessage info) {}
 }
