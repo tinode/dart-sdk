@@ -13,7 +13,7 @@ class TopicDescription {
   final String status;
 
   /// topic's default access permissions; present only if the current user has 'S' permission
-  final DefAcs defacs;
+  DefAcs defacs;
 
   /// Actual access permissions
   final AccessMode acs;
@@ -21,7 +21,7 @@ class TopicDescription {
   /// Server-issued id of the last {data} message
   final int seq;
 
-  /// ID of the message user claims through {note} message to have read, optional
+  /// Id of the message user claims through {note} message to have read, optional
   final int read;
 
   /// Like 'read', but received, optional
@@ -34,8 +34,10 @@ class TopicDescription {
   /// Application-defined data that's available to all topic subscribers
   final dynamic public;
 
-  /// Application-defined data that's available to the current
+  /// Application-defined data that's available to the current user only
   final dynamic private;
+
+  final bool noForwarding;
 
   TopicDescription({
     this.created,
@@ -49,6 +51,7 @@ class TopicDescription {
     this.clear,
     this.public,
     this.private,
+    this.noForwarding,
   });
 
   /// Create a new instance from received message
@@ -65,6 +68,7 @@ class TopicDescription {
       clear: msg['clear'],
       public: msg['public'],
       private: msg['private'],
+      noForwarding: msg['noForwarding'],
     );
   }
 }

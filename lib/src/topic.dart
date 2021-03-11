@@ -3,31 +3,68 @@ import 'dart:math';
 
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
+import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/services/cache-manager.dart';
+import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/models/set-params.dart';
+import 'package:tinode/src/models/del-range.dart';
+import 'package:tinode/src/models/get-query.dart';
 import 'package:tinode/src/services/tinode.dart';
+import 'package:tinode/src/models/message.dart';
+import 'package:tinode/src/models/def-acs.dart';
+import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/models/values.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/sorted-cache.dart';
 import 'package:tinode/src/topic-me.dart';
+
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
-import 'models/server-messages.dart';
-import 'models/set-params.dart';
-import 'models/del-range.dart';
-import 'models/get-query.dart';
-import 'models/message.dart';
-import 'models/values.dart';
-
 class Topic {
-  bool _new;
+  /// This topic's name
   String name;
+
+  /// This topic's access mode
   AccessMode acs;
-  DateTime created;
-  DateTime updated;
-  bool _subscribed;
+
+  /// in case some messages were deleted, the greatest ID
+  /// of a deleted message, optional
+  int clear;
+
+  /// topic's default access permissions; present only if the current user has 'S' permission
+  DefAcs defacs;
+
+  /// Application-defined data that's available to the current user only
   dynamic private;
+
+  /// Application-defined data that's available to all topic subscribers
+  dynamic public;
+
+  /// Id of the message user claims through {note} message to have read, optional
+  int read;
+
+  /// Like 'read', but received, optional
+  int recv;
+
+  /// account status; included for `me` topic only, and only if
+  /// the request is sent by a root-authenticated session.
+  String status;
+
+  /// Topic creation date
+  DateTime created;
+
+  /// Topic update date
+  DateTime updated;
+
+  /// Topic touched date
+  DateTime touched;
+
+  bool _new;
+  bool _subscribed;
   int maxDel = 0;
   List<String> tags;
 
@@ -41,6 +78,8 @@ class Topic {
     return a.seq - b.seq;
   }, true);
 
+  DateTime _lastDescUpdate;
+
   AuthService _authService;
   CacheManager _cacheManager;
   TinodeService _tinodeService;
@@ -50,6 +89,8 @@ class Topic {
   PublishSubject onMetaSub = PublishSubject<CacheUser>();
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
+
+  PublishSubject onMetaDesc = PublishSubject<Topic>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -107,7 +148,9 @@ class Topic {
 
       if (setParams != null && setParams.desc != null) {
         setParams.desc.noForwarding = true;
-        processMetaDesc(setParams.desc);
+
+        /// FIXME: Type mismatch
+        // processMetaDesc(setParams.desc);
       }
     }
     return ctrl;
@@ -208,7 +251,8 @@ class Topic {
         params.desc.acs = ctrl.params.acs;
         params.desc.updated = ctrl.ts;
       }
-      processMetaDesc(params.desc);
+      // FIXME: Type mismatch
+      // processMetaDesc(params.desc);
     }
 
     if (params.tags != null) {
@@ -431,7 +475,6 @@ class Topic {
   dynamic updateDeletedRanges() {}
   dynamic processMetaCreds(List<dynamic> a, bool b) {}
   dynamic swapMessageId(Message m, int newSeqId) {}
-  dynamic processMetaDesc(SetDesc a) {}
   dynamic processMetaTags(List<String> a) {}
 
   /// This should be called by `Tinode` when all messages are received
@@ -451,11 +494,12 @@ class Topic {
         // If this is a change to user's own permissions, update them in topic too.
         // Desc will update 'me' topic.
         if (_tinodeService.isMe(sub['user']) && sub['acs'] != null) {
-          processMetaDesc(SetDesc(
-            updated: sub['updated'] ?? DateTime.now(),
-            touched: sub['updated'],
-            acs: sub['acs'],
-          ));
+          /// FIXME: Type mismatch
+          // processMetaDesc(SetDesc(
+          //   updated: sub['updated'] ?? DateTime.now(),
+          //   touched: sub['updated'],
+          //   acs: sub['acs'],
+          // ));
         }
         user = _updateCachedUser(sub['user'], sub);
       } else {
@@ -466,11 +510,6 @@ class Topic {
       onMetaSub.add(user);
     }
   }
-
-  void routeMeta(MetaMessage meta) {}
-  void routeData(DataMessage data) {}
-  void routePres(PresMessage pres) {}
-  void routeInfo(InfoMessage info) {}
 
   /// Calculate ranges of missing messages
   void _updateDeletedRanges() {
@@ -562,4 +601,62 @@ class Topic {
     // users[userId] = CacheUser(merged, userId);
     return users[userId];
   }
+
+  /// Called by `Tinode`
+  ///
+  /// Process metadata message
+  void routeMeta(MetaMessage meta) {
+    if (meta.desc != null) {
+      _lastDescUpdate = meta.ts;
+      processMetaDesc(meta.desc);
+    }
+  }
+
+  /// Called by Tinode when meta.desc packet is received.
+  ///
+  /// Called by 'me' topic on contact update (desc._noForwarding is true).
+  void processMetaDesc(TopicDescription desc) {
+    if (Tools.isP2PTopicName(name)) {
+      desc.defacs = null;
+    }
+
+    // Copy parameters from desc object to this topic
+    acs = desc.acs ?? acs;
+    clear = desc.clear ?? clear;
+    created = desc.created ?? created;
+    defacs = desc.defacs ?? defacs;
+    private = desc.private ?? private;
+    public = desc.public ?? public;
+    read = desc.read ?? read;
+    recv = desc.recv ?? recv;
+    seq = desc.seq ?? seq;
+    status = desc.status ?? status;
+    updated = desc.updated ?? updated;
+
+    if (name == topic_names.TOPIC_ME && !desc.noForwarding) {
+      var me = _tinodeService.getTopic(topic_names.TOPIC_ME);
+      if (me != null) {
+        me.processMetaSub([
+          TopicSubscription(
+            noForwarding: true,
+            topic: name,
+            updated: updated,
+            touched: touched,
+            acs: desc.acs,
+            seq: desc.seq,
+            read: desc.read,
+            recv: desc.recv,
+            public: desc.public,
+            private: desc.private,
+          )
+        ]);
+      }
+    }
+
+    onMetaSub.add(this);
+  }
+
+  void routeData(DataMessage data) {}
+  void routePres(PresMessage pres) {}
+  void routeInfo(InfoMessage info) {}
 }

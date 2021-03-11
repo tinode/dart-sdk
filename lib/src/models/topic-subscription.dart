@@ -74,6 +74,8 @@ class TopicSubscription {
   /// can be used only when querying 'me' topic
   final Seen seen;
 
+  final bool noForwarding;
+
   TopicSubscription({
     this.user,
     this.updated,
@@ -88,6 +90,7 @@ class TopicSubscription {
     this.topic,
     this.seq,
     this.seen,
+    this.noForwarding,
   });
 
   static TopicSubscription fromMessage(Map<String, dynamic> msg) {
@@ -105,6 +108,7 @@ class TopicSubscription {
       topic: msg['topic'],
       seq: msg['seq'],
       seen: msg['seen'] != null ? Seen.fromMessages(msg['seen']) : null,
+      noForwarding: msg['noForwarding'],
     );
   }
 }

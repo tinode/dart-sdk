@@ -2,8 +2,8 @@ import 'package:tinode/src/models/def-acs.dart';
 
 class SetDesc {
   DefAcs defacs;
-  Map<String, dynamic> public;
-  Map<String, dynamic> private;
+  dynamic public;
+  dynamic private;
   dynamic acs;
   dynamic updated;
   bool noForwarding;
