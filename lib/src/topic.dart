@@ -73,7 +73,7 @@ class Topic {
   final int _minSeq = 0;
   bool _noEarlierMsgs;
 
-  Map<String, CacheUser> users = {};
+  Map<String, TopicSubscription> users = {};
   final SortedCache<Message> _messages = SortedCache<Message>((a, b) {
     return a.seq - b.seq;
   }, true);
@@ -86,11 +86,11 @@ class Topic {
   ConfigService _configService;
 
   PublishSubject onData = PublishSubject<dynamic>();
-  PublishSubject onMetaSub = PublishSubject<CacheUser>();
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
   PublishSubject onMetaDesc = PublishSubject<Topic>();
+  PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -117,31 +117,38 @@ class Topic {
 
     // Send subscribe message, handle async response.
     // If topic name is explicitly provided, use it. If no name, then it's a new group topic, use "new".
-    var ctrl = await _tinodeService.subscribe(name != '' ? name : topic_names.TOPIC_NEW, getParams, setParams);
+    var response = await _tinodeService.subscribe(name != '' ? name : topic_names.TOPIC_NEW, getParams, setParams);
+    var ctrl = CtrlMessage.fromMessage(response);
 
-    if (ctrl['code'] >= 300) {
+    if (ctrl.code >= 300) {
       // Do nothing if the topic is already subscribed to.
       return ctrl;
     }
 
     _subscribed = true;
-    acs = (ctrl['params'] != null && ctrl['params']['acs'] != null) ? ctrl['params']['acs'] : acs;
+    acs = (ctrl.params != null && ctrl.params['acs'] != null) ? AccessMode(ctrl.params['acs']) : acs;
 
     // Set topic name for new topics and add it to cache.
     if (_new) {
       _new = false;
 
       // Name may change new123456 -> grpAbCdEf
-      name = ctrl['topic'];
-      created = ctrl['ts'];
-      updated = ctrl['ts'];
+      name = ctrl.topic;
+      created = ctrl.ts;
+      updated = ctrl.ts;
 
       if (name != topic_names.TOPIC_ME && name != topic_names.TOPIC_FND) {
         // Add the new topic to the list of contacts maintained by the 'me' topic.
         TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
         if (me != null) {
           me.processMetaSub([
-            {'noForwarding': true, 'topic': name, 'created': ctrl['ts'], 'updated': ctrl['ts'], 'acs': acs}
+            TopicSubscription(
+              noForwarding: true,
+              topic: name,
+              created: ctrl.ts,
+              updated: ctrl.ts,
+              acs: acs,
+            )
           ]);
         }
       }
@@ -232,7 +239,7 @@ class Topic {
 
     if (params.sub != null) {
       params.sub.topic = name;
-      if (ctrl['params'] && ctrl['params']['acs']) {
+      if (ctrl['params'] != null && ctrl['params']['acs'] != null) {
         params.sub.acs = ctrl.params.acs;
         params.sub.updated = ctrl.ts;
       }
@@ -240,7 +247,7 @@ class Topic {
         // This is a subscription update of the current user.
         // Assign user ID otherwise the update will be ignored by _processMetaSub.
         params.sub.user = _authService.userId;
-        params.desc ??= SetDesc();
+        params.desc ??= TopicDescription();
       }
       params.sub.noForwarding = true;
       processMetaSub([params.sub]);
@@ -266,7 +273,7 @@ class Topic {
     return ctrl;
   }
 
-  CacheUser subscriber(String userId) {
+  TopicSubscription subscriber(String userId) {
     return users[userId];
   }
 
@@ -277,7 +284,7 @@ class Topic {
   Future updateMode(String userId, String update) {
     var user = userId != null ? subscriber(userId) : null;
     var am = user != null ? user.acs.updateGiven(update).getGiven() : getAccessMode().updateWant(update).getWant();
-    return setMeta(SetParams(sub: SetSub(mode: am, user: userId)));
+    return setMeta(SetParams(sub: TopicSubscription(mode: am, user: userId)));
   }
 
   List<String> getTags() {
@@ -285,7 +292,7 @@ class Topic {
   }
 
   Future invite(String userId, String mode) {
-    return setMeta(SetParams(sub: SetSub(user: userId, mode: mode)));
+    return setMeta(SetParams(sub: TopicSubscription(user: userId, mode: mode)));
   }
 
   Future archive(bool arch) {
@@ -293,7 +300,7 @@ class Topic {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
 
-    return setMeta(SetParams(desc: SetDesc(private: {'arch': arch ? true : DEL_CHAR})));
+    return setMeta(SetParams(desc: TopicDescription(private: {'arch': arch ? true : DEL_CHAR})));
   }
 
   Future deleteMessages(List<DelRange> ranges, bool hard) async {
@@ -484,26 +491,23 @@ class Topic {
   }
 
   /// Called by `Tinode` when meta.sub is received or in response to received
-  void processMetaSub(List<dynamic> subscriptions) {
+  void processMetaSub(List<TopicSubscription> subscriptions) {
     for (var sub in subscriptions) {
-      sub['updated'] = DateTime.parse(sub['updated']);
-      sub['deleted'] = sub['deleted'] != null ? DateTime.parse(sub['deleted']) : null;
-
-      var user;
-      if (sub['deleted'] == null) {
+      TopicSubscription user;
+      if (sub.deleted == null) {
         // If this is a change to user's own permissions, update them in topic too.
         // Desc will update 'me' topic.
-        if (_tinodeService.isMe(sub['user']) && sub['acs'] != null) {
+        if (_tinodeService.isMe(sub.user) && sub.acs != null) {
           /// FIXME: Type mismatch
-          // processMetaDesc(SetDesc(
-          //   updated: sub['updated'] ?? DateTime.now(),
-          //   touched: sub['updated'],
-          //   acs: sub['acs'],
-          // ));
+          processMetaDesc(TopicDescription(
+            updated: sub.updated ?? DateTime.now(),
+            touched: sub.updated,
+            acs: sub.acs,
+          ));
         }
-        user = _updateCachedUser(sub['user'], sub);
+        user = _updateCachedUser(sub.user, sub);
       } else {
-        users.remove(sub['user']);
+        users.remove(sub.user);
         user = sub;
       }
 
@@ -593,9 +597,10 @@ class Topic {
 
   /// Update global user cache and local subscribers cache
   /// Don't call this method for non-subscribers
-  CacheUser _updateCachedUser(String userId, Map<String, dynamic> object) {
+  TopicSubscription _updateCachedUser(String userId, TopicSubscription object) {
     var cached = _cacheManager.getUser(userId);
-    var merged = {}..addAll(cached.public)..addAll(object);
+
+    /// FIXME: Update subscription in cache
 
     // _cacheManager.putUser(userId, CacheUser(merged, userId));
     // users[userId] = CacheUser(merged, userId);
@@ -632,6 +637,7 @@ class Topic {
     seq = desc.seq ?? seq;
     status = desc.status ?? status;
     updated = desc.updated ?? updated;
+    touched = desc.touched ?? touched;
 
     if (name == topic_names.TOPIC_ME && !desc.noForwarding) {
       var me = _tinodeService.getTopic(topic_names.TOPIC_ME);

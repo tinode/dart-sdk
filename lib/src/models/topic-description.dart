@@ -6,7 +6,10 @@ class TopicDescription {
   final DateTime created;
 
   /// Topic update date
-  final DateTime updated;
+  DateTime updated;
+
+  /// Topic touched date
+  final DateTime touched;
 
   /// account status; included for `me` topic only, and only if
   /// the request is sent by a root-authenticated session.
@@ -16,7 +19,7 @@ class TopicDescription {
   DefAcs defacs;
 
   /// Actual access permissions
-  final AccessMode acs;
+  AccessMode acs;
 
   /// Server-issued id of the last {data} message
   final int seq;
@@ -37,7 +40,7 @@ class TopicDescription {
   /// Application-defined data that's available to the current user only
   final dynamic private;
 
-  final bool noForwarding;
+  bool noForwarding;
 
   TopicDescription({
     this.created,
@@ -52,6 +55,7 @@ class TopicDescription {
     this.public,
     this.private,
     this.noForwarding,
+    this.touched,
   });
 
   /// Create a new instance from received message
@@ -69,6 +73,7 @@ class TopicDescription {
       public: msg['public'],
       private: msg['private'],
       noForwarding: msg['noForwarding'],
+      touched: msg['touched'],
     );
   }
 }

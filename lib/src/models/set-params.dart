@@ -1,36 +1,9 @@
-import 'package:tinode/src/models/def-acs.dart';
-
-class SetDesc {
-  DefAcs defacs;
-  dynamic public;
-  dynamic private;
-  dynamic acs;
-  dynamic updated;
-  bool noForwarding;
-  int seq;
-  dynamic read;
-  dynamic recv;
-  dynamic touched;
-
-  SetDesc({this.defacs, this.public, this.private, this.acs, this.updated, this.noForwarding, this.seq, this.read, this.recv, this.touched});
-}
-
-class SetSub {
-  String user;
-  String mode;
-  dynamic info;
-  bool noForwarding;
-  String topic;
-  dynamic acs;
-  dynamic updated;
-  dynamic deleted;
-
-  SetSub({this.user, this.mode, this.info, this.noForwarding, this.topic, this.acs, this.updated, this.deleted});
-}
+import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/topic-subscription.dart';
 
 class SetParams {
-  SetDesc desc;
-  SetSub sub;
+  TopicDescription desc;
+  TopicSubscription sub;
   List<String> tags;
   dynamic cred;
 

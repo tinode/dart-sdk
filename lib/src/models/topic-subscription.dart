@@ -21,18 +21,21 @@ class Seen {
 /// Topic subscriber
 class TopicSubscription {
   /// Id of the user this subscription
-  final String user;
+  String user;
 
   /// Timestamp of the last change in the subscription, present only for
   /// requester's own subscriptions
-  final DateTime updated;
+  DateTime updated;
 
   /// Timestamp of the last message in the topic (may also include
   /// other events in the future, such as new subscribers)
   final DateTime touched;
 
+  final DateTime deleted;
+  final DateTime created;
+
   /// User's access permissions
-  final AccessMode acs;
+  AccessMode acs;
 
   /// Id of the message user claims through {note} message
   final int read;
@@ -62,7 +65,7 @@ class TopicSubscription {
   /// Topic this subscription describes
   ///
   /// can be used only when querying 'me' topic
-  final String topic;
+  String topic;
 
   /// Server-issued id of the last {data} message
   ///
@@ -74,7 +77,9 @@ class TopicSubscription {
   /// can be used only when querying 'me' topic
   final Seen seen;
 
-  final bool noForwarding;
+  bool noForwarding;
+
+  String mode;
 
   TopicSubscription({
     this.user,
@@ -91,13 +96,18 @@ class TopicSubscription {
     this.seq,
     this.seen,
     this.noForwarding,
+    this.deleted,
+    this.created,
+    this.mode,
   });
 
   static TopicSubscription fromMessage(Map<String, dynamic> msg) {
     return TopicSubscription(
       user: msg['user'],
-      updated: msg['updated'] != null ? DateTime.parse(msg['updated']) : DateTime.now(),
-      touched: msg['touched'] != null ? DateTime.parse(msg['touched']) : DateTime.now(),
+      updated: msg['updated'] != null ? DateTime.parse(msg['updated']) : null,
+      touched: msg['touched'] != null ? DateTime.parse(msg['touched']) : null,
+      deleted: msg['deleted'] != null ? DateTime.parse(msg['deleted']) : null,
+      created: msg['created'] != null ? DateTime.parse(msg['created']) : null,
       acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
       read: msg['read'],
       recv: msg['recv'],
@@ -109,6 +119,7 @@ class TopicSubscription {
       seq: msg['seq'],
       seen: msg['seen'] != null ? Seen.fromMessages(msg['seen']) : null,
       noForwarding: msg['noForwarding'],
+      mode: msg['mode'],
     );
   }
 }

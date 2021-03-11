@@ -4,6 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
 import 'package:tinode/src/models/packet-types.dart' as packet_types;
+import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/services/future-manager.dart';
@@ -244,7 +245,7 @@ class TinodeService {
           data.set.desc = setParams.desc;
         } else if (Tools.isP2PTopicName(topicName) && setParams.desc.defacs != null) {
           // Use optional default permissions only.
-          data.set.desc = SetDesc(defacs: setParams.desc.defacs);
+          data.set.desc = TopicDescription(defacs: setParams.desc.defacs);
         }
       }
 
