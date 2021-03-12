@@ -183,16 +183,16 @@ class Topic {
     message.setStatus(message_status.SENDING);
 
     try {
-      var ctrl = await _tinodeService.publishMessage(message);
-      var seq = ctrl['params']['seq'];
+      var response = await _tinodeService.publishMessage(message);
+      var ctrl = CtrlMessage.fromMessage(response);
+
+      var seq = ctrl.params['seq'];
       if (seq != null) {
         message.setStatus(message_status.SENT);
       }
-      message.ts = ctrl['ts'];
+      message.ts = ctrl.ts;
       swapMessageId(message, seq);
-
-      // TODO: Fix type mismatch
-      // routeData(message);
+      routeData(message.asDataMessage(_authService.userId));
     } catch (e) {
       print('WARNING: Message rejected by the server');
       print(e.toString());

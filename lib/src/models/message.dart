@@ -35,6 +35,19 @@ class Message {
     return packet;
   }
 
+  DataMessage asDataMessage(String from) {
+    return DataMessage(
+      content: content,
+      from: from,
+      noForwarding: false,
+      head: {},
+      hi: null,
+      topic: topicName,
+      seq: null,
+      ts: ts,
+    );
+  }
+
   void setStatus(int status) {
     _status = status;
     onStatusChange.add(status);
@@ -45,7 +58,6 @@ class Message {
   }
 
   void resetLocalValues() {
-    from = null;
     ts = null;
     setStatus(MessageStatus.NONE);
   }
