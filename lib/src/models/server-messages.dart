@@ -1,4 +1,5 @@
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/models/packet-types.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/topic-description.dart';
@@ -122,12 +123,25 @@ class DataMessage {
   final DateTime ts;
 
   /// Server-issued sequential Id
-  final int seq;
+  int seq;
 
   /// object, application-defined content exactly as published by the user in the {pub} message
   final dynamic content;
 
-  DataMessage({this.topic, this.from, this.head, this.ts, this.seq, this.content});
+  final bool noForwarding;
+
+  int hi;
+
+  DataMessage({
+    this.topic,
+    this.from,
+    this.head,
+    this.ts,
+    this.seq,
+    this.content,
+    this.noForwarding,
+    this.hi,
+  });
 
   static DataMessage fromMessage(Map<String, dynamic> msg) {
     return DataMessage(
@@ -137,6 +151,8 @@ class DataMessage {
       ts: msg['ts'] != null ? DateTime.parse(msg['ts']) : null,
       seq: msg['seq'],
       content: msg['content'],
+      noForwarding: msg['noForwarding'],
+      hi: msg['hi'],
     );
   }
 }

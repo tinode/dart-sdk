@@ -79,12 +79,12 @@ class Topic {
   List<String> tags;
 
   int seq;
-  final int _maxSeq = 0;
-  final int _minSeq = 0;
+  int _maxSeq = 0;
+  int _minSeq = 0;
   bool _noEarlierMsgs;
 
   Map<String, TopicSubscription> users = {};
-  final SortedCache<Message> _messages = SortedCache<Message>((a, b) {
+  final SortedCache<DataMessage> _messages = SortedCache<DataMessage>((a, b) {
     return a.seq - b.seq;
   }, true);
 
@@ -93,7 +93,7 @@ class Topic {
   TinodeService _tinodeService;
   ConfigService _configService;
 
-  PublishSubject onData = PublishSubject<dynamic>();
+  PublishSubject onData = PublishSubject<DataMessage>();
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
@@ -448,7 +448,7 @@ class Topic {
     }
 
     if (me != null) {
-      me.setMsgReadRecv(name, what, seq);
+      me.setMsgReadRecv(name, what, seq, null);
     }
   }
 
@@ -603,6 +603,37 @@ class Topic {
     return users[userId];
   }
 
+  /// Process data message
+  void routeData(DataMessage data) {
+    if (data.content != null) {
+      if (touched == null || touched.isBefore(data.ts)) {
+        touched = data.ts;
+      }
+    }
+
+    if (data.seq > _maxSeq) {
+      _maxSeq = data.seq;
+    }
+
+    if (data.seq < _minSeq || _minSeq == 0) {
+      _minSeq = data.seq;
+    }
+
+    if (!data.noForwarding) {
+      _messages.put([data]);
+      _updateDeletedRanges();
+    }
+
+    onData.add(data);
+
+    // Update locally cached contact with the new message count.
+    TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
+    if (me != null) {
+      // Messages from the current user are considered to be read already.
+      me.setMsgReadRecv(name, (data.from == null || _tinodeService.isMe(data.from)) ? 'read' : 'msg', data.seq, data.ts);
+    }
+  }
+
   /// Called by `Tinode`
   ///
   /// Process metadata message
@@ -739,6 +770,5 @@ class Topic {
   void processMetaCreds(List<UserCredential> cred) {}
 
   void routePres(PresMessage pres) {}
-  void routeData(DataMessage data) {}
   void routeInfo(InfoMessage info) {}
 }

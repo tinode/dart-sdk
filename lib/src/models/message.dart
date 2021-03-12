@@ -2,13 +2,12 @@ import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/packet.dart';
 import 'package:tinode/src/models/packet-data.dart';
+import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
 import 'package:tinode/src/models/message-status.dart' as MessageStatus;
 
 class Message {
-  int hi;
-  int seq;
   bool echo;
   int _status;
   DateTime ts;
@@ -46,7 +45,6 @@ class Message {
   }
 
   void resetLocalValues() {
-    seq = null;
     from = null;
     ts = null;
     setStatus(MessageStatus.NONE);
