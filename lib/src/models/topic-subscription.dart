@@ -29,28 +29,28 @@ class TopicSubscription {
 
   /// Timestamp of the last message in the topic (may also include
   /// other events in the future, such as new subscribers)
-  final DateTime touched;
+  DateTime touched;
 
-  final DateTime deleted;
-  final DateTime created;
+  DateTime deleted;
+  DateTime created;
 
   /// User's access permissions
   AccessMode acs;
 
   /// Id of the message user claims through {note} message
-  final int read;
+  int read;
 
   /// Like 'read', but received, optional
-  final int recv;
+  int recv;
 
   /// In case some messages were deleted, the greatest Id of a deleted message, optional
-  final int clear;
+  int clear;
 
   /// Application-defined user's 'public' object, absent when querying P2P topics
-  final dynamic public;
+  dynamic public;
 
   /// Application-defined user's 'private' object.
-  final dynamic private;
+  dynamic private;
 
   /// current online status of the user; if this is a
   /// group or a p2p topic, it's user's online status in the topic,
@@ -60,7 +60,7 @@ class TopicSubscription {
   /// online, not necessarily attached to topic; a group topic
   /// is considered online if it has at least one active
   /// subscriber.
-  final int online;
+  int online;
 
   /// Topic this subscription describes
   ///
@@ -70,12 +70,12 @@ class TopicSubscription {
   /// Server-issued id of the last {data} message
   ///
   /// can be used only when querying 'me' topic
-  final int seq;
+  int seq;
 
   /// If this is a P2P topic, info on when the peer was last online
   ///
   /// can be used only when querying 'me' topic
-  final Seen seen;
+  Seen seen;
 
   bool noForwarding;
 
@@ -120,6 +120,28 @@ class TopicSubscription {
       seen: msg['seen'] != null ? Seen.fromMessages(msg['seen']) : null,
       noForwarding: msg['noForwarding'],
       mode: msg['mode'],
+    );
+  }
+
+  TopicSubscription copy() {
+    return TopicSubscription(
+      user: user,
+      updated: updated,
+      touched: touched,
+      deleted: deleted,
+      created: created,
+      acs: acs,
+      read: read,
+      recv: recv,
+      clear: clear,
+      public: public,
+      private: private,
+      online: online,
+      topic: topic,
+      seq: seq,
+      seen: seen,
+      noForwarding: noForwarding,
+      mode: mode,
     );
   }
 }

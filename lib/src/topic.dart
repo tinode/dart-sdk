@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:tinode/src/models/credential.dart';
-import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
-import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
+import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/models/del-range.dart';
 import 'package:tinode/src/models/get-query.dart';
@@ -100,6 +100,7 @@ class Topic {
   PublishSubject onMeta = PublishSubject<MetaMessage>();
   PublishSubject onMetaDesc = PublishSubject<Topic>();
   PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
+  PublishSubject onTagsUpdated = PublishSubject<List<String>>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -164,9 +165,7 @@ class Topic {
 
       if (setParams != null && setParams.desc != null) {
         setParams.desc.noForwarding = true;
-
-        /// FIXME: Type mismatch
-        // processMetaDesc(setParams.desc);
+        processMetaDesc(setParams.desc);
       }
     }
     return ctrl;
@@ -267,8 +266,7 @@ class Topic {
         params.desc.acs = ctrl.params.acs;
         params.desc.updated = ctrl.ts;
       }
-      // FIXME: Type mismatch
-      // processMetaDesc(params.desc);
+      processMetaDesc(params.desc);
     }
 
     if (params.tags != null) {
@@ -490,10 +488,6 @@ class Topic {
   dynamic flushMessageRange(int a, int b) {}
   dynamic updateDeletedRanges() {}
   dynamic swapMessageId(Message m, int newSeqId) {}
-  dynamic processMetaTags(List<String> a) {}
-
-  // Do nothing for topics other than 'me'
-  dynamic processMetaCreds(List<UserCredential> cred) {}
 
   /// This should be called by `Tinode` when all messages are received
   void allMessagesReceived(int count) {
@@ -586,10 +580,26 @@ class Topic {
   TopicSubscription _updateCachedUser(String userId, TopicSubscription object) {
     var cached = _cacheManager.getUser(userId);
 
-    /// FIXME: Update subscription in cache
+    cached.acs = object.acs ?? cached.acs;
+    cached.clear = object.clear ?? cached.clear;
+    cached.created = object.created ?? cached.created;
+    cached.deleted = cached.deleted ?? cached.deleted;
+    cached.mode = object.mode ?? cached.mode;
+    cached.noForwarding = object.mode ?? cached.noForwarding;
+    cached.online = object.online ?? cached.online;
+    cached.private = object.private ?? cached.private;
+    cached.public = object.public ?? cached.public;
+    cached.read = object.read ?? cached.read;
+    cached.recv = object.recv ?? cached.recv;
+    cached.seen = object.seen ?? cached.seen;
+    cached.seen = object.seen ?? cached.seen;
+    cached.topic = object.topic ?? cached.topic;
+    cached.touched = object.touched ?? cached.touched;
+    cached.updated = object.updated ?? cached.updated;
+    cached.user = object.user ?? cached.user;
 
-    // _cacheManager.putUser(userId, CacheUser(merged, userId));
-    // users[userId] = CacheUser(merged, userId);
+    _cacheManager.putUser(userId, cached);
+    users[userId] = cached;
     return users[userId];
   }
 
@@ -714,6 +724,19 @@ class Topic {
       onData.add(null);
     }
   }
+
+  /// Called by Tinode when meta.tags is received.
+  void processMetaTags(List<String> tags) {
+    if (tags.isNotEmpty && tags[0] == DEL_CHAR) {
+      tags = [];
+    }
+
+    this.tags = tags;
+    onTagsUpdated.add(tags);
+  }
+
+  // Do nothing for topics other than 'me'
+  void processMetaCreds(List<UserCredential> cred) {}
 
   void routePres(PresMessage pres) {}
   void routeData(DataMessage data) {}

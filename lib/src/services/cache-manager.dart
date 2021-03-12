@@ -1,4 +1,5 @@
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/topic.dart';
 
 /// This is a data structure for user's data in cache
@@ -42,8 +43,8 @@ class CacheManager {
   }
 
   /// This is a wrapper for `get` function which gets a user from cache by userId
-  CacheUser getUser(String userId) {
-    CacheUser pub = get('user', userId);
+  TopicSubscription getUser(String userId) {
+    TopicSubscription pub = get('user', userId);
     if (pub != null) {
       return pub;
     }
@@ -51,7 +52,7 @@ class CacheManager {
   }
 
   /// This is a wrapper for `put` function which puts a user into cache by userId
-  void putUser(String userId, CacheUser user) {
+  void putUser(String userId, TopicSubscription user) {
     return put('user', userId, user.copy());
   }
 
