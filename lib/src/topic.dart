@@ -98,6 +98,7 @@ class Topic {
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
   PublishSubject onMeta = PublishSubject<MetaMessage>();
+  PublishSubject onPres = PublishSubject<PresMessage>();
   PublishSubject onMetaDesc = PublishSubject<Topic>();
   PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
   PublishSubject onTagsUpdated = PublishSubject<List<String>>();
@@ -769,6 +770,65 @@ class Topic {
   // Do nothing for topics other than 'me'
   void processMetaCreds(List<UserCredential> cred) {}
 
-  void routePres(PresMessage pres) {}
+  /// Process presence change message
+  void routePres(PresMessage pres) {
+    TopicSubscription user;
+    switch (pres.what) {
+      case 'del':
+        // Delete cached messages.
+        processDelMessages(pres.clear, pres.delseq);
+        break;
+
+      case 'on':
+      case 'off':
+        // Update online status of a subscription.
+        user = users[pres.src];
+        if (user != null) {
+          user.online = pres.what == 'on';
+        } else {
+          print('WARNING: Presence update for an unknown user ' + name + ' ' + pres.src);
+        }
+        break;
+
+      case 'term':
+        // Attachment to topic is terminated probably due to cluster rehashing.
+        resetSubscription();
+        break;
+
+      case 'acs':
+        var userId = pres.src ?? _authService.userId;
+        user = users[userId];
+
+        if (user == null) {
+          // Update for an unknown user: notification of a new subscription.
+          var acs = AccessMode(null).updateAll(pres.dacs);
+          if (acs != null && acs.mode != NONE) {
+            user = _cacheManager.getUser(userId);
+
+            if (user == null) {
+              user = TopicSubscription(user: userId, acs: acs);
+              getMeta(startMetaQuery().withOneSub(null, userId).build());
+            } else {
+              user.acs = acs;
+            }
+
+            user.updated = DateTime.now();
+            processMetaSub([user]);
+          }
+        } else {
+          // Known user
+          user.acs.updateAll(pres.dacs);
+          // Update user's access mode.
+          processMetaSub([TopicSubscription(user: userId, updated: DateTime.now(), acs: user.acs)]);
+        }
+
+        break;
+      default:
+        print('INFO: Ignored presence update ' + pres.what);
+    }
+
+    onPres.add(pres);
+  }
+
   void routeInfo(InfoMessage info) {}
 }

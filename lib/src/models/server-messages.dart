@@ -188,6 +188,8 @@ class PresMessage {
   /// Changes to access mode, "what" is "acs", optional
   final AccessMode acs;
 
+  final AccessMode dacs;
+
   PresMessage({
     this.topic,
     this.src,
@@ -199,6 +201,7 @@ class PresMessage {
     this.act,
     this.tgt,
     this.acs,
+    this.dacs,
   });
 
   static PresMessage fromMessage(Map<String, dynamic> msg) {
@@ -214,6 +217,7 @@ class PresMessage {
       act: msg['act'],
       tgt: msg['tgt'],
       acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
+      dacs: msg['dacs'] != null ? AccessMode(msg['dacs']) : null,
     );
   }
 }

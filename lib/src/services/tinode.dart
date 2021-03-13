@@ -4,9 +4,9 @@ import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
 import 'package:tinode/src/models/packet-types.dart' as packet_types;
-import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/services/packet-generator.dart';
+import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/services/future-manager.dart';
 import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';

@@ -60,7 +60,7 @@ class TopicSubscription {
   /// online, not necessarily attached to topic; a group topic
   /// is considered online if it has at least one active
   /// subscriber.
-  int online;
+  bool online;
 
   /// Topic this subscription describes
   ///
