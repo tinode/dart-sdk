@@ -94,11 +94,13 @@ class Topic {
   ConfigService _configService;
 
   PublishSubject onData = PublishSubject<DataMessage>();
+  PublishSubject onMeta = PublishSubject<MetaMessage>();
+  PublishSubject onPres = PublishSubject<PresMessage>();
+  PublishSubject onInfo = PublishSubject<InfoMessage>();
+
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
-  PublishSubject onMeta = PublishSubject<MetaMessage>();
-  PublishSubject onPres = PublishSubject<PresMessage>();
   PublishSubject onMetaDesc = PublishSubject<Topic>();
   PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
   PublishSubject onTagsUpdated = PublishSubject<List<String>>();
@@ -830,5 +832,30 @@ class Topic {
     onPres.add(pres);
   }
 
-  void routeInfo(InfoMessage info) {}
+  void routeInfo(InfoMessage info) {
+    if (info.what != 'kp') {
+      var user = users[info.from];
+      if (user != null) {
+        if (info.what == 'recv') {
+          user.recv = info.seq;
+        }
+        if (info.what == 'read') {
+          user.read = info.seq;
+        }
+
+        if (user.recv < user.read) {
+          user.recv = user.read;
+        }
+      }
+
+      // If this is an update from the current user, update the contact with the new count too.
+      if (_tinodeService.isMe(info.from)) {
+        TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
+        if (me != null) {
+          me.setMsgReadRecv(info.topic, info.what, info.seq, null);
+        }
+      }
+    }
+    onInfo.add(info);
+  }
 }
