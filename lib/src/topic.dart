@@ -1,6 +1,4 @@
-import 'dart:async';
-import 'dart:math';
-
+import 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/delete-transaction.dart';
@@ -26,12 +24,71 @@ import 'package:tinode/src/topic-me.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:get_it/get_it.dart';
 
+import 'dart:async';
+import 'dart:math';
+
 class Topic {
   /// This topic's name
   String name;
 
+  /// Timestamp when the topic was created
+  DateTime created;
+
+  /// Timestamp when the topic was last updated
+  DateTime updated;
+
+  /// Timestamp of the last messages
+  DateTime touched;
+
   /// This topic's access mode
-  AccessMode acs;
+  AccessMode acs = AccessMode(null);
+
+  /// Application-defined data that's available to the current user only
+  dynamic private;
+
+  /// Application-defined data that's available to all topic subscribers
+  dynamic public;
+
+  /// Locally cached data
+  ///
+  /// Subscribed users, for tracking read/recv/msg notifications
+  final Map<String, TopicSubscription> _users = {};
+
+  /// Current value of locally issued seqId, used for pending messages
+  final int _queuedSeqId = AppSettings().localSeqId;
+
+  /// The maximum known {data.seq} value
+  int _maxSeq = 0;
+
+  /// The minimum known {data.seq} value
+  int _minSeq = 0;
+
+  /// Indicator that the last request for earlier messages returned 0
+  bool _noEarlierMsgs;
+
+  /// The maximum known deletion ID
+  int maxDel = 0;
+
+  ///  User discovery tags
+  List<String> tags;
+
+  // Credentials such as email or phone number.
+  final List<Credential> _credentials = [];
+
+  /// Message cache, sorted by message seq values, from old to new
+  final SortedCache<DataMessage> _messages = SortedCache<DataMessage>((a, b) => a.seq - b.seq, true);
+
+  /// true if the topic is currently live
+  bool _subscribed;
+
+  /// Timestamp when topic meta-desc update was received
+  DateTime _lastDescUpdate;
+
+  /// Last topic subscribers update timestamp
+  DateTime _lastSubsUpdate;
+
+  /// Topic created but not yet synced with the server. Used only during initialization.
+  bool _new = true;
 
   /// in case some messages were deleted, the greatest ID
   /// of a deleted message, optional
@@ -39,12 +96,6 @@ class Topic {
 
   /// topic's default access permissions; present only if the current user has 'S' permission
   DefAcs defacs;
-
-  /// Application-defined data that's available to the current user only
-  dynamic private;
-
-  /// Application-defined data that's available to all topic subscribers
-  dynamic public;
 
   /// Id of the message user claims through {note} message to have read, optional
   int read;
@@ -55,55 +106,30 @@ class Topic {
   /// account status; included for `me` topic only, and only if
   /// the request is sent by a root-authenticated session.
   String status;
-
-  /// Topic creation date
-  DateTime created;
-
-  /// Topic update date
-  DateTime updated;
-
-  /// Topic touched date
-  DateTime touched;
-
-  /// Last topic description update timestamp
-  DateTime _lastDescUpdate;
-
-  /// Last topic subscribers update timestamp
-  DateTime _lastSubsUpdate;
-
-  /// Max deleted message
-  int maxDel = 0;
-
-  bool _new;
-  bool _subscribed;
-  List<String> tags;
-
   int seq;
-  int _maxSeq = 0;
-  int _minSeq = 0;
-  bool _noEarlierMsgs;
 
-  Map<String, TopicSubscription> users = {};
-  final SortedCache<DataMessage> _messages = SortedCache<DataMessage>((a, b) {
-    return a.seq - b.seq;
-  }, true);
-
+  /// Authentication service, responsible for managing credentials and user id
   AuthService _authService;
+
+  /// Cache manager service, responsible for read and write operations on cached data
   CacheManager _cacheManager;
+
+  /// Tinode service, responsible for handling messages, preparing packets and sending them
   TinodeService _tinodeService;
+
+  /// Configuration service, responsible for storing library config and information
   ConfigService _configService;
 
   PublishSubject onData = PublishSubject<DataMessage>();
   PublishSubject onMeta = PublishSubject<MetaMessage>();
+  PublishSubject onMetaDesc = PublishSubject<Topic>();
+  PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
   PublishSubject onPres = PublishSubject<PresMessage>();
   PublishSubject onInfo = PublishSubject<InfoMessage>();
 
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
-  PublishSubject onAllMessagesReceived = PublishSubject<int>();
-
-  PublishSubject onMetaDesc = PublishSubject<Topic>();
-  PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
   PublishSubject onTagsUpdated = PublishSubject<List<String>>();
+  PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -284,7 +310,7 @@ class Topic {
   }
 
   TopicSubscription subscriber(String userId) {
-    return users[userId];
+    return _users[userId];
   }
 
   AccessMode getAccessMode() {
@@ -420,9 +446,9 @@ class Topic {
     // Send {del} message, return promise
     var ctrl = await _tinodeService.deleteSubscription(name, user);
     // Remove the object from the subscription cache;
-    users.remove(user);
+    _users.remove(user);
     // Notify listeners
-    onSubsUpdated.add(users);
+    onSubsUpdated.add(_users);
     return ctrl;
   }
 
@@ -433,7 +459,7 @@ class Topic {
     }
 
     TopicMe me = _tinodeService.getTopic(topic_names.TOPIC_ME);
-    var user = users[_authService.userId];
+    var user = _users[_authService.userId];
 
     var update = false;
     if (user != null) {
@@ -602,8 +628,8 @@ class Topic {
     cached.user = object.user ?? cached.user;
 
     _cacheManager.putUser(userId, cached);
-    users[userId] = cached;
-    return users[userId];
+    _users[userId] = cached;
+    return _users[userId];
   }
 
   /// Process data message
@@ -727,7 +753,7 @@ class Topic {
         }
         user = _updateCachedUser(sub.user, sub);
       } else {
-        users.remove(sub.user);
+        _users.remove(sub.user);
         user = sub;
       }
 
@@ -784,7 +810,7 @@ class Topic {
       case 'on':
       case 'off':
         // Update online status of a subscription.
-        user = users[pres.src];
+        user = _users[pres.src];
         if (user != null) {
           user.online = pres.what == 'on';
         } else {
@@ -799,7 +825,7 @@ class Topic {
 
       case 'acs':
         var userId = pres.src ?? _authService.userId;
-        user = users[userId];
+        user = _users[userId];
 
         if (user == null) {
           // Update for an unknown user: notification of a new subscription.
@@ -834,7 +860,7 @@ class Topic {
 
   void routeInfo(InfoMessage info) {
     if (info.what != 'kp') {
-      var user = users[info.from];
+      var user = _users[info.from];
       if (user != null) {
         if (info.what == 'recv') {
           user.recv = info.seq;
