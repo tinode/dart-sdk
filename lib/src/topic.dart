@@ -1,4 +1,3 @@
-import 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/delete-transaction.dart';
@@ -7,6 +6,7 @@ import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';
+import 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/models/set-params.dart';
@@ -120,15 +120,31 @@ class Topic {
   /// Configuration service, responsible for storing library config and information
   ConfigService _configService;
 
+  /// This event will be triggered when a `data` message is received
   PublishSubject onData = PublishSubject<DataMessage>();
+
+  /// This event will be triggered when a `meta` message is received
   PublishSubject onMeta = PublishSubject<MetaMessage>();
+
+  /// This event will be triggered when a `meta.desc` message is received
   PublishSubject onMetaDesc = PublishSubject<Topic>();
+
+  /// This event will be triggered when a `meta.sub` message is received
   PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
+
+  /// This event will be triggered when a `pres` message is received
   PublishSubject onPres = PublishSubject<PresMessage>();
+
+  /// This event will be triggered when a `meta.info` message is received
   PublishSubject onInfo = PublishSubject<InfoMessage>();
 
+  /// This event will be triggered when topic subscriptions are updated
   PublishSubject onSubsUpdated = PublishSubject<dynamic>();
+
+  /// This event will be triggered when topic tags are updated
   PublishSubject onTagsUpdated = PublishSubject<List<String>>();
+
+  /// This event will be triggered when all messages are received
   PublishSubject onAllMessagesReceived = PublishSubject<int>();
 
   Topic(String topicName) {
@@ -148,15 +164,15 @@ class Topic {
     return _subscribed;
   }
 
-  Future subscribe(GetQuery getParams, SetParams setParams) async {
+  Future<CtrlMessage> subscribe(GetQuery getParams, SetParams setParams) async {
     // If the topic is already subscribed, return resolved promise
     if (isSubscribed) {
-      return;
+      return null;
     }
 
     // Send subscribe message, handle async response.
     // If topic name is explicitly provided, use it. If no name, then it's a new group topic, use "new".
-    var response = await _tinodeService.subscribe(name != '' ? name : topic_names.TOPIC_NEW, getParams, setParams);
+    var response = await _tinodeService.subscribe(name ?? topic_names.TOPIC_NEW, getParams, setParams);
     var ctrl = CtrlMessage.fromMessage(response);
 
     if (ctrl.code >= 300) {
@@ -175,6 +191,7 @@ class Topic {
       name = ctrl.topic;
       created = ctrl.ts;
       updated = ctrl.ts;
+      // Don't assign touched, otherwise topic will be put on top of the list on subscribe.
 
       if (name != topic_names.TOPIC_ME && name != topic_names.TOPIC_FND) {
         // Add the new topic to the list of contacts maintained by the 'me' topic.
@@ -200,11 +217,13 @@ class Topic {
     return ctrl;
   }
 
+  /// Create a draft of a message without sending it to the server
   Message createMessage(dynamic data, bool echo) {
     return _tinodeService.createMessage(name, data, echo);
   }
 
-  Future publishMessage(Message message) async {
+  /// Publish message created by Topic.createMessage.
+  Future<CtrlMessage> publishMessage(Message message) async {
     if (!isSubscribed) {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
@@ -215,22 +234,28 @@ class Topic {
       var response = await _tinodeService.publishMessage(message);
       var ctrl = CtrlMessage.fromMessage(response);
 
+      message.ts = ctrl.ts;
       var seq = ctrl.params['seq'];
       if (seq != null) {
         message.setStatus(message_status.SENT);
       }
-      message.ts = ctrl.ts;
       swapMessageId(message, seq);
       routeData(message.asDataMessage(_authService.userId));
+      return ctrl;
     } catch (e) {
       print('WARNING: Message rejected by the server');
       print(e.toString());
       message.setStatus(message_status.FAILED);
       onData.add(null);
+      return null;
     }
   }
 
-  Future leave(bool unsubscribe) async {
+  /// Leave the topic, optionally unsubscribe. Leaving the topic means the topic will stop
+  /// receiving updates from the server. Unsubscribing will terminate user's relationship with the topic.
+  ///
+  /// Wrapper for Tinode.leave
+  Future<CtrlMessage> leave(bool unsubscribe) async {
     if (!isSubscribed && !unsubscribe) {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
@@ -241,45 +266,52 @@ class Topic {
       _cacheManager.delete('topic', name);
       gone();
     }
-    return ctrl;
+    return CtrlMessage.fromMessage(ctrl);
   }
 
+  /// Request topic metadata from the serve.
   Future getMeta(GetQuery params) {
     return _tinodeService.getMeta(name, params);
   }
 
+  /// Request more messages from the server
   Future getMessagesPage(int limit, bool forward) {
     var query = startMetaQuery();
-    var promise = getMeta(query.build());
+    var future = getMeta(query.build());
 
     if (forward) {
       query.withLaterData(limit);
     } else {
       query.withEarlierData(limit);
-      promise = promise.then((ctrl) {
+      future = future.then((ctrl) {
         if (ctrl != null && ctrl['params'] != null && (ctrl['params']['count'] == null || ctrl.params.count == 0)) {
           _noEarlierMsgs = true;
         }
       });
     }
 
-    return promise;
+    return future;
   }
 
-  Future setMeta(SetParams params) async {
+  /// Update topic metadata
+  Future<CtrlMessage> setMeta(SetParams params) async {
     // Send Set message, handle async response.
-    var ctrl = await _tinodeService.setMeta(name, params);
-    if (ctrl && ctrl.code >= 300) {
+    var response = await _tinodeService.setMeta(name, params);
+    var ctrl = CtrlMessage.fromMessage(response);
+
+    if (ctrl != null && ctrl.code >= 300) {
       // Not modified
       return ctrl;
     }
 
     if (params.sub != null) {
       params.sub.topic = name;
-      if (ctrl['params'] != null && ctrl['params']['acs'] != null) {
-        params.sub.acs = ctrl.params.acs;
+
+      if (ctrl.params != null && ctrl.params['acs'] != null) {
+        params.sub.acs = AccessMode(ctrl.params['acs']);
         params.sub.updated = ctrl.ts;
       }
+
       if (params.sub.user == null) {
         // This is a subscription update of the current user.
         // Assign user ID otherwise the update will be ignored by _processMetaSub.
@@ -291,8 +323,8 @@ class Topic {
     }
 
     if (params.desc != null) {
-      if (ctrl.params && ctrl.params.acs) {
-        params.desc.acs = ctrl.params.acs;
+      if (ctrl.params != null && ctrl.params['acs'] != null) {
+        params.desc.acs = AccessMode(ctrl.params['acs']);
         params.desc.updated = ctrl.ts;
       }
       processMetaDesc(params.desc);
@@ -302,11 +334,23 @@ class Topic {
       processMetaTags(params.tags);
     }
 
-    if (params.cred) {
+    if (params.cred != null) {
       processMetaCreds([params.cred]);
     }
 
     return ctrl;
+  }
+
+  /// Update access mode of the current user or of another topic subscriber
+  Future<CtrlMessage> updateMode(String userId, String update) {
+    var user = userId != null && userId != '' ? subscriber(userId) : null;
+    var am = user != null ? user.acs.updateGiven(update).getGiven() : getAccessMode().updateWant(update).getWant();
+    return setMeta(SetParams(sub: TopicSubscription(user: userId, mode: am)));
+  }
+
+  /// Create new topic subscription. Wrapper for Tinode.setMeta
+  Future<CtrlMessage> invite(String userId, String mode) {
+    return setMeta(SetParams(sub: TopicSubscription(user: userId, mode: mode)));
   }
 
   TopicSubscription subscriber(String userId) {
@@ -317,18 +361,8 @@ class Topic {
     return acs;
   }
 
-  Future updateMode(String userId, String update) {
-    var user = userId != null ? subscriber(userId) : null;
-    var am = user != null ? user.acs.updateGiven(update).getGiven() : getAccessMode().updateWant(update).getWant();
-    return setMeta(SetParams(sub: TopicSubscription(mode: am, user: userId)));
-  }
-
   List<String> getTags() {
     return [...tags];
-  }
-
-  Future invite(String userId, String mode) {
-    return setMeta(SetParams(sub: TopicSubscription(user: userId, mode: mode)));
   }
 
   Future archive(bool arch) {
