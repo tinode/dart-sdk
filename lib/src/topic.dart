@@ -67,7 +67,7 @@ class Topic {
   bool _noEarlierMsgs;
 
   /// The maximum known deletion ID
-  int maxDel = 0;
+  int _maxDel = 0;
 
   ///  User discovery tags
   List<String> tags;
@@ -353,27 +353,16 @@ class Topic {
     return setMeta(SetParams(sub: TopicSubscription(user: userId, mode: mode)));
   }
 
-  TopicSubscription subscriber(String userId) {
-    return _users[userId];
-  }
-
-  AccessMode getAccessMode() {
-    return acs;
-  }
-
-  List<String> getTags() {
-    return [...tags];
-  }
-
-  Future archive(bool arch) {
-    if (private && private.arch == arch) {
+  /// Archive or un-archive the topic. Wrapper for Tinode.setMeta
+  Future archive(bool archive) {
+    if (private && private.arch == archive) {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
-
-    return setMeta(SetParams(desc: TopicDescription(private: {'arch': arch ? true : DEL_CHAR})));
+    return setMeta(SetParams(desc: TopicDescription(private: {'archive': archive ? true : DEL_CHAR})));
   }
 
-  Future deleteMessages(List<DelRange> ranges, bool hard) async {
+  /// Delete messages. Hard-deleting messages requires Owner permission
+  Future<CtrlMessage> deleteMessages(List<DelRange> ranges, bool hard) async {
     if (!isSubscribed) {
       return Future.error(Exception('Cannot delete messages in inactive topic'));
     }
@@ -393,7 +382,7 @@ class Topic {
     List<DelRange> toSend = [];
     ranges.forEach((r) {
       if (r.low < _configService.appSettings.localSeqId) {
-        if (r.hi == 0 || r.hi < _configService.appSettings.localSeqId) {
+        if (r.hi == null || r.hi < _configService.appSettings.localSeqId) {
           toSend.add(r);
         } else {
           // Clip hi to max allowed value.
@@ -412,10 +401,11 @@ class Topic {
       });
     }
 
-    var ctrl = await result;
+    var response = await result;
+    var ctrl = CtrlMessage.fromMessage(response);
 
-    if (ctrl['params']['del'] > maxDel) {
-      maxDel = ctrl.params.del;
+    if (ctrl.params['del'] > _maxDel) {
+      _maxDel = ctrl.params['del'];
     }
 
     ranges.forEach((r) {
@@ -432,6 +422,7 @@ class Topic {
     return ctrl;
   }
 
+  /// Delete all messages. Hard-deleting messages requires Owner permission
   Future deleteMessagesAll(bool hard) {
     if (_maxSeq == 0 || _maxSeq <= 0) {
       // There are no messages to delete.
@@ -440,23 +431,24 @@ class Topic {
     return deleteMessages([DelRange(low: 1, hi: _maxSeq + 1, all: true)], hard);
   }
 
-  Future deleteMessagesList(List<int> list, bool hard) {
+  /// Delete multiple messages defined by their IDs. Hard-deleting messages requires Owner permission
+  Future<CtrlMessage> deleteMessagesList(List<int> list, bool hard) {
     list.sort((a, b) => a - b);
 
-    var ranges = [];
-    // Convert the array of IDs to ranges.
+    // Convert the array of IDs to ranges
+    var ranges = <DelRange>[];
     list.forEach((id) {
       if (ranges.isEmpty) {
         // First element.
-        ranges.add({'low': id});
+        ranges.add(DelRange(low: id));
       } else {
-        Map<String, int> prev = ranges[ranges.length - 1];
-        if ((prev['hi'] == 0 && (id != prev['low'] + 1)) || (id > prev['hi'])) {
+        var prev = ranges[ranges.length - 1];
+        if ((prev.hi == null && (id != prev.low + 1)) || (id > prev.hi)) {
           // New range.
-          ranges.add({'low': id});
+          ranges.add(DelRange(low: id));
         } else {
           // Expand existing range.
-          prev['hi'] = prev['hi'] != null ? max(prev['hi'], id + 1) : id + 1;
+          prev.hi = prev.hi != null ? max(prev.hi, id + 1) : id + 1;
         }
       }
       return ranges;
@@ -464,6 +456,18 @@ class Topic {
 
     // Send {del} message, return promise
     return deleteMessages(ranges, hard);
+  }
+
+  TopicSubscription subscriber(String userId) {
+    return _users[userId];
+  }
+
+  AccessMode getAccessMode() {
+    return acs;
+  }
+
+  List<String> getTags() {
+    return [...tags];
   }
 
   Future deleteTopic(bool hard) async {
@@ -797,7 +801,7 @@ class Topic {
 
   /// Delete cached messages and update cached transaction IDs
   void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {
-    maxDel = max(clear, maxDel);
+    _maxDel = max(clear, _maxDel);
     this.clear = max(clear, this.clear);
 
     var count = 0;
