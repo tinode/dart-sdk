@@ -458,38 +458,29 @@ class Topic {
     return deleteMessages(ranges, hard);
   }
 
-  TopicSubscription subscriber(String userId) {
-    return _users[userId];
-  }
-
-  AccessMode getAccessMode() {
-    return acs;
-  }
-
-  List<String> getTags() {
-    return [...tags];
-  }
-
+  /// Delete topic. Requires Owner permission. Wrapper for Tinode.delTopic
   Future deleteTopic(bool hard) async {
     var ctrl = await _tinodeService.deleteTopic(name, hard);
     resetSubscription();
     gone();
-    return ctrl;
+    return CtrlMessage.fromMessage(ctrl);
   }
 
-  Future delSubscription(String user) async {
+  /// Delete subscription. Requires Share permission. Wrapper for Tinode.deleteSubscription
+  Future deleteSubscription(String userId) async {
     if (!isSubscribed) {
       return Future.error(Exception('Cannot delete subscription in inactive topic'));
     }
     // Send {del} message, return promise
-    var ctrl = await _tinodeService.deleteSubscription(name, user);
+    var ctrl = await _tinodeService.deleteSubscription(name, userId);
     // Remove the object from the subscription cache;
-    _users.remove(user);
+    _users.remove(userId);
     // Notify listeners
     onSubsUpdated.add(_users);
     return ctrl;
   }
 
+  /// Send a read/recv notification
   void note(String what, int seq) {
     if (!isSubscribed) {
       // Cannot sending {note} on an inactive topic".
@@ -501,10 +492,18 @@ class Topic {
 
     var update = false;
     if (user != null) {
-      // if (!user[what] || user[what] < seq) {
-      //   user[what] = seq;
-      //   update = true;
-      // }
+      // Known topic subscriber
+      if (what == 'read') {
+        if (user.read == null || user.read < seq) {
+          user.read = seq;
+          update = true;
+        }
+      } else if (what == 'recv') {
+        if (user.recv == null || user.recv < seq) {
+          user.recv = seq;
+          update = true;
+        }
+      }
     } else if (me != null) {
       // Subscriber not found, such as in case of no S permission.
       update = me.getMsgReadRecv(name, what) < seq;
@@ -519,10 +518,12 @@ class Topic {
     }
   }
 
-  void noteRecv(int seq) {
+  /// Send a 'recv' receipt. Wrapper for Tinode.noteRecv
+  void noteReceive(int seq) {
     note('recv', seq);
   }
 
+  /// Send a 'read' receipt. Wrapper for Tinode.noteRead
   void noteRead(int seq) {
     seq = seq ?? _maxSeq;
     if (seq > 0) {
@@ -530,6 +531,7 @@ class Topic {
     }
   }
 
+  /// Send a key-press notification. Wrapper for Tinode.noteKeyPress
   void noteKeyPress() {
     if (isSubscribed) {
       _tinodeService.noteKeyPress(name);
@@ -538,11 +540,27 @@ class Topic {
     }
   }
 
-  dynamic userDesc(String uid) {
-    var user = _cacheManager.getUser(uid);
+  /// Get user description from global cache. The user does not need to be a
+  /// subscriber of this topic.
+  TopicSubscription userDescription(String userId) {
+    var user = _cacheManager.getUser(userId);
     if (user != null) {
       return user;
     }
+
+    return null;
+  }
+
+  TopicSubscription subscriber(String userId) {
+    return _users[userId];
+  }
+
+  AccessMode getAccessMode() {
+    return acs;
+  }
+
+  List<String> getTags() {
+    return [...tags];
   }
 
   void resetSubscription() {
