@@ -559,20 +559,44 @@ class Topic {
     return _users[name];
   }
 
-  TopicSubscription subscriber(String userId) {
-    return _users[userId];
-  }
-
-  AccessMode getAccessMode() {
-    return acs;
-  }
-
+  /// Get topic's tags
   List<String> getTags() {
     return [...tags];
   }
 
+  /// Get cached subscription for the given user Id
+  TopicSubscription subscriber(String userId) {
+    return _users[userId];
+  }
+
+  /// Get topic's access node
+  AccessMode getAccessMode() {
+    return acs;
+  }
+
   void resetSubscription() {
     _subscribed = false;
+  }
+
+  /// Get the number of topic subscribers who marked this message as either recv or read
+  /// Current user is excluded from the count
+  int msgReceiptCount(String what, int seq) {
+    var count = 0;
+    if (seq > 0) {
+      var me = _authService.userId;
+      _users.forEach((key, user) {
+        if (user.user != me) {
+          if (what == 'recv' && user.recv >= seq) {
+            count++;
+          }
+
+          if (what == 'read' && user.read >= seq) {
+            count++;
+          }
+        }
+      });
+    }
+    return count;
   }
 
   /// Check if topic is a p2p topic
