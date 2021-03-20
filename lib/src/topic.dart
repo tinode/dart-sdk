@@ -551,6 +551,14 @@ class Topic {
     return null;
   }
 
+  /// Get description of the p2p peer from subscription cache
+  TopicSubscription p2pPeerDesc() {
+    if (!isP2P()) {
+      return null;
+    }
+    return _users[name];
+  }
+
   TopicSubscription subscriber(String userId) {
     return _users[userId];
   }
@@ -565,6 +573,11 @@ class Topic {
 
   void resetSubscription() {
     _subscribed = false;
+  }
+
+  /// Check if topic is a p2p topic
+  bool isP2P() {
+    return Tools.isP2PTopicName(name);
   }
 
   dynamic startMetaQuery() {}
