@@ -28,7 +28,7 @@ class MetaGetBuilder {
   }
 
   /// Get latest timestamp
-  _getIms() {
+  DateTime _getIms() {
     var cupd = contact != null ? contact.updated : null;
     var tupd = topic.lastDescUpdate;
     return tupd.isAfter(cupd) ? cupd : tupd;
