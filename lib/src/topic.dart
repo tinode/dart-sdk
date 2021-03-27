@@ -1,4 +1,3 @@
-import 'package:tinode/src/meta-get-builder.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/delete-transaction.dart';
@@ -11,6 +10,7 @@ import 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/models/set-params.dart';
+import 'package:tinode/src/meta-get-builder.dart';
 import 'package:tinode/src/models/del-range.dart';
 import 'package:tinode/src/models/get-query.dart';
 import 'package:tinode/src/services/tinode.dart';
