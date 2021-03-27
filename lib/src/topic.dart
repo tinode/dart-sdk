@@ -1,3 +1,4 @@
+import 'package:tinode/src/meta-get-builder.dart';
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/delete-transaction.dart';
@@ -26,6 +27,8 @@ import 'package:get_it/get_it.dart';
 
 import 'dart:async';
 import 'dart:math';
+
+import 'models/message.dart';
 
 class Topic {
   /// This topic's name
@@ -239,8 +242,7 @@ class Topic {
       if (seq != null) {
         message.setStatus(message_status.SENT);
       }
-      swapMessageId(message, seq);
-      routeData(message.asDataMessage(_authService.userId));
+      routeData(message.asDataMessage(_authService.userId, seq));
       return ctrl;
     } catch (e) {
       print('WARNING: Message rejected by the server');
@@ -264,17 +266,21 @@ class Topic {
     resetSubscription();
     if (unsubscribe) {
       _cacheManager.delete('topic', name);
-      gone();
+      _gone();
     }
     return CtrlMessage.fromMessage(ctrl);
   }
 
-  /// Request topic metadata from the serve.
+  /// Request topic metadata from the serve
   Future getMeta(GetQuery params) {
+    // Send {get} message, return promise.
     return _tinodeService.getMeta(name, params);
   }
 
   /// Request more messages from the server
+  ///
+  /// `limit` - number of messages to get.
+  /// `forward` if true, request newer messages.
   Future getMessagesPage(int limit, bool forward) {
     var query = startMetaQuery();
     var future = getMeta(query.build());
@@ -283,8 +289,9 @@ class Topic {
       query.withLaterData(limit);
     } else {
       query.withEarlierData(limit);
-      future = future.then((ctrl) {
-        if (ctrl != null && ctrl['params'] != null && (ctrl['params']['count'] == null || ctrl.params.count == 0)) {
+      future = future.then((response) {
+        var ctrl = CtrlMessage.fromMessage(response);
+        if (ctrl != null && ctrl.params != null && (ctrl.params['count'] == null || ctrl.params['count'] == 0)) {
           _noEarlierMsgs = true;
         }
       });
@@ -295,6 +302,10 @@ class Topic {
 
   /// Update topic metadata
   Future<CtrlMessage> setMeta(SetParams params) async {
+    if (params.tags != null && params.tags.isNotEmpty) {
+      params.tags = Tools.normalizeArray(params.tags);
+    }
+
     // Send Set message, handle async response.
     var response = await _tinodeService.setMeta(name, params);
     var ctrl = CtrlMessage.fromMessage(response);
@@ -335,7 +346,7 @@ class Topic {
     }
 
     if (params.cred != null) {
-      processMetaCreds([params.cred]);
+      processMetaCreds([params.cred], true);
     }
 
     return ctrl;
@@ -416,14 +427,14 @@ class Topic {
       }
     });
 
-    updateDeletedRanges();
+    _updateDeletedRanges();
     // Calling with no parameters to indicate the messages were deleted.
     onData.add(null);
     return ctrl;
   }
 
   /// Delete all messages. Hard-deleting messages requires Owner permission
-  Future deleteMessagesAll(bool hard) {
+  Future<CtrlMessage> deleteMessagesAll(bool hard) {
     if (_maxSeq == 0 || _maxSeq <= 0) {
       // There are no messages to delete.
       return Future.value();
@@ -459,15 +470,15 @@ class Topic {
   }
 
   /// Delete topic. Requires Owner permission. Wrapper for Tinode.delTopic
-  Future deleteTopic(bool hard) async {
+  Future<CtrlMessage> deleteTopic(bool hard) async {
     var ctrl = await _tinodeService.deleteTopic(name, hard);
     resetSubscription();
-    gone();
+    _gone();
     return CtrlMessage.fromMessage(ctrl);
   }
 
   /// Delete subscription. Requires Share permission. Wrapper for Tinode.deleteSubscription
-  Future deleteSubscription(String userId) async {
+  Future<CtrlMessage> deleteSubscription(String userId) async {
     if (!isSubscribed) {
       return Future.error(Exception('Cannot delete subscription in inactive topic'));
     }
@@ -477,11 +488,11 @@ class Topic {
     _users.remove(userId);
     // Notify listeners
     onSubsUpdated.add(_users);
-    return ctrl;
+    return CtrlMessage.fromMessage((ctrl));
   }
 
   /// Send a read/recv notification
-  void note(String what, int seq) {
+  void _note(String what, int seq) {
     if (!isSubscribed) {
       // Cannot sending {note} on an inactive topic".
       return;
@@ -520,14 +531,14 @@ class Topic {
 
   /// Send a 'recv' receipt. Wrapper for Tinode.noteRecv
   void noteReceive(int seq) {
-    note('recv', seq);
+    _note('recv', seq);
   }
 
   /// Send a 'read' receipt. Wrapper for Tinode.noteRead
   void noteRead(int seq) {
     seq = seq ?? _maxSeq;
     if (seq > 0) {
-      note('read', seq);
+      _note('read', seq);
     }
   }
 
@@ -559,6 +570,11 @@ class Topic {
     return _users[name];
   }
 
+  /// Get all cached subscriptions for this topic
+  Map<String, TopicSubscription> get subscribers {
+    return _users;
+  }
+
   /// Get topic's tags
   List<String> getTags() {
     return [...tags];
@@ -569,18 +585,14 @@ class Topic {
     return _users[userId];
   }
 
-  /// Get topic's access node
-  AccessMode getAccessMode() {
-    return acs;
-  }
-
-  void resetSubscription() {
-    _subscribed = false;
+  /// Get all cached subscriptions for this topic
+  List<DataMessage> get messages {
+    return _messages.buffer;
   }
 
   /// Get the number of topic subscribers who marked this message as either recv or read
   /// Current user is excluded from the count
-  int msgReceiptCount(String what, int seq) {
+  int _msgReceiptCount(String what, int seq) {
     var count = 0;
     if (seq > 0) {
       var me = _authService.userId;
@@ -599,130 +611,88 @@ class Topic {
     return count;
   }
 
+  /// Get the number of topic subscribers who marked this message (and all older messages) as read.
+  /// The current user is excluded from the count
+  ///
+  /// seq - Message id to check.
+  int msgReadCount(int seq) {
+    return _msgReceiptCount('read', seq);
+  }
+
+  /// Get the number of topic subscribers who marked this message (and all older messages) as read
+  /// The current user is excluded from the count
+  ///
+  /// seq - Message id to check
+  int msgRecvCount(int seq) {
+    return _msgReceiptCount('recv', seq);
+  }
+
+  /// Check if cached message IDs indicate that the server may have more messages.
+  /// newer check for newer messages
+  bool msgHasMoreMessages(bool newer) {
+    return newer
+        ? seq > _maxSeq
+        :
+        // _minSeq could be more than 1, but earlier messages could have been deleted.
+        (_minSeq > 1 && !_noEarlierMsgs);
+  }
+
+  /// Check if the given seq Id is id of the most recent message
+  /// seqId id of the message to check
+  bool isNewMessage(seqId) {
+    return _maxSeq <= seqId;
+  }
+
+  DataMessage flushMessage(int seqId) {
+    var idx = _messages.find(DataMessage(seq: seqId), false);
+    return idx >= 0 ? _messages.deleteAt(idx) : null;
+  }
+
+  void flushMessageRange(int fromId, int untilId) {
+    // start, end: find insertion points (nearest == true).
+    var since = _messages.find(DataMessage(seq: fromId), true);
+    return since >= 0 ? _messages.deleteRange(since, _messages.find(DataMessage(seq: untilId), true)) : [];
+  }
+
+  /// Get type of the topic: me, p2p, grp, fnd...
+  String getType() {
+    return Tools.topicType(name);
+  }
+
+  /// Get topic's access node
+  AccessMode getAccessMode() {
+    return acs;
+  }
+
+  /// Get topic's default access mode
+  DefAcs getDefaultAccess() {
+    return defacs;
+  }
+
+  /// Initialize new meta {@link Tinode.GetQuery} builder. The query is attached to the current topic.
+  /// It will not work correctly if used with a different topic
+  MetaGetBuilder startMetaQuery() {
+    return MetaGetBuilder(this);
+  }
+
+  /// Check if topic is archived, i.e. private.arch == true.
+  bool isArchived() {
+    return private != null && private['arch'] ? true : false;
+  }
+
+  /// Check if topic is a channel
+  bool isChannel() {
+    return Tools.isChannelTopicName(name);
+  }
+
+  /// Check if topic is a group topic
+  bool isGroup() {
+    return Tools.isGroupTopicName(name);
+  }
+
   /// Check if topic is a p2p topic
   bool isP2P() {
     return Tools.isP2PTopicName(name);
-  }
-
-  dynamic startMetaQuery() {}
-  dynamic gone() {}
-  dynamic flushMessage(int a) {}
-  dynamic flushMessageRange(int a, int b) {}
-  dynamic updateDeletedRanges() {}
-  dynamic swapMessageId(Message m, int newSeqId) {}
-
-  /// This should be called by `Tinode` when all messages are received
-  void allMessagesReceived(int count) {
-    _updateDeletedRanges();
-    onAllMessagesReceived.add(count);
-  }
-
-  /// Calculate ranges of missing messages
-  void _updateDeletedRanges() {
-    var ranges = [];
-    var prev;
-
-    // Check for gap in the beginning, before the first message.
-    var first = _messages.getAt(0);
-
-    if (first != null && _minSeq > 1 && !_noEarlierMsgs) {
-      // Some messages are missing in the beginning.
-      if (first.hi > 0) {
-        // The first message already represents a gap.
-        if (first.seq > 1) {
-          first.seq = 1;
-        }
-        if (first.hi < _minSeq - 1) {
-          first.hi = _minSeq - 1;
-        }
-        prev = first;
-      } else {
-        // Create new gap.
-        prev = {'seq': 1, 'hi': _minSeq - 1};
-        ranges.add(prev);
-      }
-    } else {
-      // No gap in the beginning.
-      prev = {'seq': 0, 'hi': 0};
-    }
-
-    // Find gaps in the list of received messages. The list contains messages-proper as well
-    // as placeholders for deleted ranges.
-    // The messages are iterated by seq ID in ascending order.
-    _messages.forEach((data, i) {
-      // Do not create a gap between the last sent message and the first unsent.
-      if (data.seq >= _configService.appSettings.localSeqId) {
-        return;
-      }
-
-      // New message is reducing the existing gap
-      if (data.seq == (prev['hi'] > 0 ? prev['hi'] : prev.seq) + 1) {
-        // No new gap. Replace previous with current.
-        prev = data;
-        return;
-      }
-
-      // Found a new gap.
-      if (prev['hi']) {
-        // Previous is also a gap, alter it.
-        prev['hi'] = data.hi > 0 ? data.hi : data.seq;
-        return;
-      }
-
-      // Previous is not a gap. Create a new gap.
-      prev = {
-        'seq': (data.hi > 0 ? data.hi : data.seq) + 1,
-        'hi': data.hi > 0 ? data.hi : data.seq,
-      };
-      ranges.add(prev);
-    }, null, null);
-
-    // Check for missing messages at the end.
-    // All messages could be missing or it could be a new topic with no messages.
-    var last = _messages.getLast();
-    var maxSeq = max(seq, _maxSeq) ?? 0;
-    if ((maxSeq > 0 && last == null) || (last != null && ((last.hi > 0 ? last.hi : last.seq) < maxSeq))) {
-      if (last != null && last.hi > 0) {
-        // Extend existing gap
-        last.hi = maxSeq;
-      } else {
-        // Create new gap.
-        ranges.add({'seq': last != null ? last.seq + 1 : 1, 'hi': maxSeq});
-      }
-    }
-
-    // Insert new gaps into cache.
-    ranges.map((gap) {
-      _messages.put(gap);
-    });
-  }
-
-  /// Update global user cache and local subscribers cache
-  /// Don't call this method for non-subscribers
-  TopicSubscription _updateCachedUser(String userId, TopicSubscription object) {
-    var cached = _cacheManager.getUser(userId);
-
-    cached.acs = object.acs ?? cached.acs;
-    cached.clear = object.clear ?? cached.clear;
-    cached.created = object.created ?? cached.created;
-    cached.deleted = cached.deleted ?? cached.deleted;
-    cached.mode = object.mode ?? cached.mode;
-    cached.noForwarding = object.mode ?? cached.noForwarding;
-    cached.online = object.online ?? cached.online;
-    cached.private = object.private ?? cached.private;
-    cached.public = object.public ?? cached.public;
-    cached.read = object.read ?? cached.read;
-    cached.recv = object.recv ?? cached.recv;
-    cached.seen = object.seen ?? cached.seen;
-    cached.seen = object.seen ?? cached.seen;
-    cached.topic = object.topic ?? cached.topic;
-    cached.touched = object.touched ?? cached.touched;
-    cached.updated = object.updated ?? cached.updated;
-    cached.user = object.user ?? cached.user;
-
-    _cacheManager.putUser(userId, cached);
-    _users[userId] = cached;
-    return _users[userId];
   }
 
   /// Process data message
@@ -779,117 +749,11 @@ class Topic {
     }
 
     if (meta.cred != null) {
-      processMetaCreds(meta.cred);
+      processMetaCreds(meta.cred, false);
     }
 
     onMeta.add(meta);
   }
-
-  /// Called by Tinode when meta.desc packet is received.
-  ///
-  /// Called by 'me' topic on contact update (desc._noForwarding is true).
-  void processMetaDesc(TopicDescription desc) {
-    if (Tools.isP2PTopicName(name)) {
-      desc.defacs = null;
-    }
-
-    // Copy parameters from desc object to this topic
-    acs = desc.acs ?? acs;
-    clear = desc.clear ?? clear;
-    created = desc.created ?? created;
-    defacs = desc.defacs ?? defacs;
-    private = desc.private ?? private;
-    public = desc.public ?? public;
-    read = desc.read ?? read;
-    recv = desc.recv ?? recv;
-    seq = desc.seq ?? seq;
-    status = desc.status ?? status;
-    updated = desc.updated ?? updated;
-    touched = desc.touched ?? touched;
-
-    if (name == topic_names.TOPIC_ME && !desc.noForwarding) {
-      var me = _tinodeService.getTopic(topic_names.TOPIC_ME);
-      if (me != null) {
-        me.processMetaSub([
-          TopicSubscription(
-            noForwarding: true,
-            topic: name,
-            updated: updated,
-            touched: touched,
-            acs: desc.acs,
-            seq: desc.seq,
-            read: desc.read,
-            recv: desc.recv,
-            public: desc.public,
-            private: desc.private,
-          )
-        ]);
-      }
-    }
-
-    onMetaSub.add(this);
-  }
-
-  /// Called by `Tinode` when meta.sub is received or in response to received
-  void processMetaSub(List<TopicSubscription> subscriptions) {
-    for (var sub in subscriptions) {
-      TopicSubscription user;
-      if (sub.deleted == null) {
-        // If this is a change to user's own permissions, update them in topic too.
-        // Desc will update 'me' topic.
-        if (_tinodeService.isMe(sub.user) && sub.acs != null) {
-          processMetaDesc(TopicDescription(
-            updated: sub.updated ?? DateTime.now(),
-            touched: sub.updated,
-            acs: sub.acs,
-          ));
-        }
-        user = _updateCachedUser(sub.user, sub);
-      } else {
-        _users.remove(sub.user);
-        user = sub;
-      }
-
-      onMetaSub.add(user);
-    }
-  }
-
-  /// Delete cached messages and update cached transaction IDs
-  void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {
-    _maxDel = max(clear, _maxDel);
-    this.clear = max(clear, this.clear);
-
-    var count = 0;
-    for (var range in delseq) {
-      if (range.hi == null || range.hi == 0) {
-        count++;
-        flushMessage(range.low);
-      } else {
-        for (var i = range.low; i < range.hi; i++) {
-          count++;
-          flushMessage(i);
-        }
-      }
-    }
-
-    if (count > 0) {
-      updateDeletedRanges();
-      onData.add(null);
-    }
-  }
-
-  /// Called by Tinode when meta.tags is received.
-  void processMetaTags(List<String> tags) {
-    if (tags.isNotEmpty && tags[0] == DEL_CHAR) {
-      tags = [];
-    }
-
-    this.tags = tags;
-    onTagsUpdated.add(tags);
-  }
-
-  // Do nothing for topics other than 'me'
-  void processMetaCreds(List<UserCredential> cred) {}
 
   /// Process presence change message
   void routePres(PresMessage pres) {
@@ -976,5 +840,242 @@ class Topic {
       }
     }
     onInfo.add(info);
+  }
+
+  /// Called by Tinode when meta.desc packet is received.
+  ///
+  /// Called by 'me' topic on contact update (desc._noForwarding is true).
+  void processMetaDesc(TopicDescription desc) {
+    if (Tools.isP2PTopicName(name)) {
+      desc.defacs = null;
+    }
+
+    // Copy parameters from desc object to this topic
+    acs = desc.acs ?? acs;
+    clear = desc.clear ?? clear;
+    created = desc.created ?? created;
+    defacs = desc.defacs ?? defacs;
+    private = desc.private ?? private;
+    public = desc.public ?? public;
+    read = desc.read ?? read;
+    recv = desc.recv ?? recv;
+    seq = desc.seq ?? seq;
+    status = desc.status ?? status;
+    updated = desc.updated ?? updated;
+    touched = desc.touched ?? touched;
+
+    if (name == topic_names.TOPIC_ME && !desc.noForwarding) {
+      var me = _tinodeService.getTopic(topic_names.TOPIC_ME);
+      if (me != null) {
+        me.processMetaSub([
+          TopicSubscription(
+            noForwarding: true,
+            topic: name,
+            updated: updated,
+            touched: touched,
+            acs: desc.acs,
+            seq: desc.seq,
+            read: desc.read,
+            recv: desc.recv,
+            public: desc.public,
+            private: desc.private,
+          )
+        ]);
+      }
+    }
+
+    onMetaSub.add(this);
+  }
+
+  /// Called by `Tinode` when meta.sub is received or in response to received
+  void processMetaSub(List<TopicSubscription> subscriptions) {
+    for (var sub in subscriptions) {
+      TopicSubscription user;
+      if (sub.deleted == null) {
+        // If this is a change to user's own permissions, update them in topic too.
+        // Desc will update 'me' topic.
+        if (_tinodeService.isMe(sub.user) && sub.acs != null) {
+          processMetaDesc(TopicDescription(
+            updated: sub.updated ?? DateTime.now(),
+            touched: sub.updated,
+            acs: sub.acs,
+          ));
+        }
+        user = _updateCachedUser(sub.user, sub);
+      } else {
+        _users.remove(sub.user);
+        user = sub;
+      }
+
+      onMetaSub.add(user);
+    }
+  }
+
+  /// Called by Tinode when meta.tags is received.
+  void processMetaTags(List<String> tags) {
+    if (tags.isNotEmpty && tags[0] == DEL_CHAR) {
+      tags = [];
+    }
+
+    this.tags = tags;
+    onTagsUpdated.add(tags);
+  }
+
+  // Do nothing for topics other than 'me'
+  void processMetaCreds(List<UserCredential> cred, bool a) {}
+
+  /// Delete cached messages and update cached transaction IDs
+  void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {
+    _maxDel = max(clear, _maxDel);
+    this.clear = max(clear, this.clear);
+
+    var count = 0;
+    for (var range in delseq) {
+      if (range.hi == null || range.hi == 0) {
+        count++;
+        flushMessage(range.low);
+      } else {
+        for (var i = range.low; i < range.hi; i++) {
+          count++;
+          flushMessage(i);
+        }
+      }
+    }
+
+    if (count > 0) {
+      _updateDeletedRanges();
+      onData.add(null);
+    }
+  }
+
+  /// This should be called by `Tinode` when all messages are received
+  void allMessagesReceived(int count) {
+    _updateDeletedRanges();
+    onAllMessagesReceived.add(count);
+  }
+
+  /// Reset subscribed state
+  void resetSubscription() {
+    _subscribed = false;
+  }
+
+  /// This topic is either deleted or unsubscribed from
+  void _gone() {
+    _messages.reset();
+    _users.removeWhere((key, value) => true);
+    acs = AccessMode(null);
+    private = null;
+    public = null;
+    _maxSeq = 0;
+    _minSeq = 0;
+    _subscribed = false;
+  }
+
+  /// Update global user cache and local subscribers cache
+  /// Don't call this method for non-subscribers
+  TopicSubscription _updateCachedUser(String userId, TopicSubscription object) {
+    var cached = _cacheManager.getUser(userId);
+
+    cached.acs = object.acs ?? cached.acs;
+    cached.clear = object.clear ?? cached.clear;
+    cached.created = object.created ?? cached.created;
+    cached.deleted = cached.deleted ?? cached.deleted;
+    cached.mode = object.mode ?? cached.mode;
+    cached.noForwarding = object.mode ?? cached.noForwarding;
+    cached.online = object.online ?? cached.online;
+    cached.private = object.private ?? cached.private;
+    cached.public = object.public ?? cached.public;
+    cached.read = object.read ?? cached.read;
+    cached.recv = object.recv ?? cached.recv;
+    cached.seen = object.seen ?? cached.seen;
+    cached.seen = object.seen ?? cached.seen;
+    cached.topic = object.topic ?? cached.topic;
+    cached.touched = object.touched ?? cached.touched;
+    cached.updated = object.updated ?? cached.updated;
+    cached.user = object.user ?? cached.user;
+
+    _cacheManager.putUser(userId, cached);
+    _users[userId] = cached;
+    return _users[userId];
+  }
+
+  /// Calculate ranges of missing messages
+  void _updateDeletedRanges() {
+    var ranges = [];
+    var prev;
+
+    // Check for gap in the beginning, before the first message.
+    var first = _messages.getAt(0);
+
+    if (first != null && _minSeq > 1 && !_noEarlierMsgs) {
+      // Some messages are missing in the beginning.
+      if (first.hi > 0) {
+        // The first message already represents a gap.
+        if (first.seq > 1) {
+          first.seq = 1;
+        }
+        if (first.hi < _minSeq - 1) {
+          first.hi = _minSeq - 1;
+        }
+        prev = first;
+      } else {
+        // Create new gap.
+        prev = {'seq': 1, 'hi': _minSeq - 1};
+        ranges.add(prev);
+      }
+    } else {
+      // No gap in the beginning.
+      prev = {'seq': 0, 'hi': 0};
+    }
+
+    // Find gaps in the list of received messages. The list contains messages-proper as well
+    // as placeholders for deleted ranges.
+    // The messages are iterated by seq ID in ascending order.
+    _messages.forEach((data, i) {
+      // Do not create a gap between the last sent message and the first unsent.
+      if (data.seq >= _configService.appSettings.localSeqId) {
+        return;
+      }
+
+      // New message is reducing the existing gap
+      if (data.seq == (prev['hi'] > 0 ? prev['hi'] : prev.seq) + 1) {
+        // No new gap. Replace previous with current.
+        prev = data;
+        return;
+      }
+
+      // Found a new gap.
+      if (prev['hi']) {
+        // Previous is also a gap, alter it.
+        prev['hi'] = data.hi > 0 ? data.hi : data.seq;
+        return;
+      }
+
+      // Previous is not a gap. Create a new gap.
+      prev = {
+        'seq': (data.hi > 0 ? data.hi : data.seq) + 1,
+        'hi': data.hi > 0 ? data.hi : data.seq,
+      };
+      ranges.add(prev);
+    }, null, null);
+
+    // Check for missing messages at the end.
+    // All messages could be missing or it could be a new topic with no messages.
+    var last = _messages.getLast();
+    var maxSeq = max(seq, _maxSeq) ?? 0;
+    if ((maxSeq > 0 && last == null) || (last != null && ((last.hi > 0 ? last.hi : last.seq) < maxSeq))) {
+      if (last != null && last.hi > 0) {
+        // Extend existing gap
+        last.hi = maxSeq;
+      } else {
+        // Create new gap.
+        ranges.add({'seq': last != null ? last.seq + 1 : 1, 'hi': maxSeq});
+      }
+    }
+
+    // Insert new gaps into cache.
+    ranges.map((gap) {
+      _messages.put(gap);
+    });
   }
 }

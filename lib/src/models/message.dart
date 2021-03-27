@@ -35,7 +35,7 @@ class Message {
     return packet;
   }
 
-  DataMessage asDataMessage(String from) {
+  DataMessage asDataMessage(String from, int seq) {
     return DataMessage(
       content: content,
       from: from,
@@ -43,7 +43,7 @@ class Message {
       head: {},
       hi: null,
       topic: topicName,
-      seq: null,
+      seq: seq,
       ts: ts,
     );
   }

@@ -100,7 +100,7 @@ class SortedCache<T> {
   }
 
   ///  Find element in buffer using buffer's comparison function
-  void find(T element, bool nearest) {
+  int find(T element, bool nearest) {
     var found = findNearest(element, buffer, !nearest);
     return found['idx'];
   }

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
+import 'package:tinode/src/models/values.dart';
 
 /// Initialize a random message Id
 var messageId = Random().nextInt(0xFFFF) + 0xFFFF;
@@ -77,5 +78,32 @@ class Tools {
   static String makeAuthorizedURL(ConnectionOptions config, String token) {
     var base = makeBaseURL(config);
     return base + '&auth=token&secret=' + token;
+  }
+
+  /// Trim whitespace, strip empty and duplicate elements elements
+  /// If the result is an empty array, add a single element "\u2421" (Unicode Del character)
+  static List<String> normalizeArray(List<String> arr) {
+    var out = <String>[];
+
+    if (arr is List) {
+      // Trim, throw away very short and empty tags.
+      for (var i = 0, l = arr.length; i < l; i++) {
+        var t = arr[i];
+        if (t != null && t != '') {
+          t = t.trim().toLowerCase();
+          if (t.length > 1) {
+            out.add(t);
+          }
+        }
+      }
+      out.sort();
+      out = out.toSet().toList();
+    }
+    if (out.isEmpty) {
+      // Add single tag with a Unicode Del character, otherwise an empty array
+      // is ambiguous. The Del tag will be stripped by the server.
+      out.add(DEL_CHAR);
+    }
+    return out;
   }
 }
