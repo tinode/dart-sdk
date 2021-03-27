@@ -63,15 +63,15 @@ class TopicDescription {
     return TopicDescription(
       created: msg['created'] != null ? DateTime.parse(msg['created']) : DateTime.now(),
       updated: msg['updated'] != null ? DateTime.parse(msg['updated']) : DateTime.now(),
+      acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
+      public: msg['public'],
+      private: msg['private'],
       status: msg['status'],
       defacs: msg['defacs'] != null ? DefAcs.fromMessage(msg['defacs']) : null,
-      acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
       seq: msg['seq'],
       read: msg['read'],
       recv: msg['recv'],
       clear: msg['clear'],
-      public: msg['public'],
-      private: msg['private'],
       noForwarding: msg['noForwarding'],
       touched: msg['touched'],
     );

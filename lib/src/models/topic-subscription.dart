@@ -1,9 +1,10 @@
 import 'package:tinode/src/models/access-mode.dart';
+import 'package:tinode/src/models/topic-description.dart';
 
 /// Info on when the peer was last online
 class Seen {
   /// Timestamp
-  final DateTime when;
+  DateTime when;
 
   /// User agent of peer's client
   final String ua;
@@ -81,6 +82,8 @@ class TopicSubscription {
 
   String mode;
 
+  int unread;
+
   TopicSubscription({
     this.user,
     this.updated,
@@ -99,6 +102,7 @@ class TopicSubscription {
     this.deleted,
     this.created,
     this.mode,
+    this.unread,
   });
 
   static TopicSubscription fromMessage(Map<String, dynamic> msg) {
@@ -142,6 +146,22 @@ class TopicSubscription {
       seen: seen,
       noForwarding: noForwarding,
       mode: mode,
+    );
+  }
+
+  TopicDescription asDesc() {
+    return TopicDescription(
+      acs: acs,
+      clear: clear,
+      created: created,
+      noForwarding: noForwarding,
+      private: private,
+      public: public,
+      read: read,
+      recv: recv,
+      seq: seq,
+      touched: touched,
+      updated: updated,
     );
   }
 }

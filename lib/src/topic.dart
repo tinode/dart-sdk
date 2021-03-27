@@ -142,7 +142,7 @@ class Topic {
   PublishSubject onInfo = PublishSubject<InfoMessage>();
 
   /// This event will be triggered when topic subscriptions are updated
-  PublishSubject onSubsUpdated = PublishSubject<dynamic>();
+  PublishSubject onSubsUpdated = PublishSubject<List<TopicSubscription>>();
 
   /// This event will be triggered when topic tags are updated
   PublishSubject onTagsUpdated = PublishSubject<List<String>>();
