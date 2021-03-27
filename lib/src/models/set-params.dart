@@ -6,7 +6,7 @@ class SetParams {
   TopicDescription desc;
   TopicSubscription sub;
   List<String> tags;
-  UserCredential cred;
+  Credential cred;
 
   SetParams({this.desc, this.sub, this.tags, this.cred});
 }

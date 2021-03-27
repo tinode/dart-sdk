@@ -75,9 +75,6 @@ class Topic {
   ///  User discovery tags
   List<String> tags;
 
-  // Credentials such as email or phone number.
-  final List<Credential> _credentials = [];
-
   /// Message cache, sorted by message seq values, from old to new
   final SortedCache<DataMessage> _messages = SortedCache<DataMessage>((a, b) => a.seq - b.seq, true);
 
@@ -922,7 +919,7 @@ class Topic {
   }
 
   // Do nothing for topics other than 'me'
-  void processMetaCreds(List<UserCredential> cred, bool a) {}
+  void processMetaCreds(List<Credential> cred, bool a) {}
 
   /// Delete cached messages and update cached transaction IDs
   void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {

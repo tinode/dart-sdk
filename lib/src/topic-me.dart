@@ -5,6 +5,7 @@ import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/models/values.dart';
 import 'package:tinode/src/topic.dart';
 import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
@@ -15,6 +16,12 @@ class TopicMe extends Topic {
 
   /// This event will be triggered when a contact is updated
   PublishSubject onContactUpdate = PublishSubject<dynamic>();
+
+  /// This event will be triggered when credentials are updated
+  PublishSubject onCredsUpdated = PublishSubject<List<Credential>>();
+
+  // Credentials such as email or phone number.
+  List<Credential> _credentials = [];
 
   /// Tinode service, responsible for handling messages, preparing packets and sending them
   TinodeService _tinodeService;
@@ -125,8 +132,53 @@ class TopicMe extends Topic {
   }
 
   @override
-  void processMetaCreds(List<UserCredential> cred, bool update) {
-    // FIXME: Implement
+  void processMetaCreds(List<Credential> creds, bool update) {
+    // ignore: unrelated_type_equality_checks
+    if (creds.length == 1 && creds[0] == DEL_CHAR) {
+      creds = [];
+    }
+
+    if (update) {
+      creds.forEach((cr) {
+        // Adding a credential.
+        var idx = _credentials.indexWhere((el) {
+          return el.meth == cr.meth && el.val == cr.val;
+        });
+
+        if (cr.val != null) {
+          if (idx < 0) {
+            // Not found.
+            if (!cr.done) {
+              // Unconfirmed credential replaces previous unconfirmed credential of the same method.
+              idx = _credentials.indexWhere((el) {
+                return el.meth == cr.meth && !el.done;
+              });
+              if (idx >= 0) {
+                // Remove previous unconfirmed credential.
+                _credentials.removeAt(idx);
+              }
+            }
+            _credentials.add(cr);
+          } else {
+            // Found. Maybe change 'done' status.
+            _credentials[idx].done = cr.done;
+          }
+        } else if (cr.resp != null) {
+          // Handle credential confirmation.
+          idx = _credentials.indexWhere((el) {
+            return el.meth == cr.meth && !el.done;
+          });
+
+          if (idx >= 0) {
+            _credentials[idx].done = true;
+          }
+        }
+      });
+    } else {
+      _credentials = creds;
+    }
+
+    onCredsUpdated.add(_credentials);
   }
 
   dynamic getContact(String a) {}

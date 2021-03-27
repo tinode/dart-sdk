@@ -1,8 +1,7 @@
-import 'package:tinode/src/models/access-mode.dart';
-import 'package:tinode/src/models/packet-types.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/delete-transaction.dart';
 import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/credential.dart';
 
 class ServerMessage {
@@ -84,7 +83,7 @@ class MetaMessage {
   final List<String> tags;
 
   /// Array of user's credentials
-  final List<UserCredential> cred;
+  final List<Credential> cred;
 
   /// Latest applicable 'delete' transaction
   final DeleteTransaction del;
@@ -102,7 +101,7 @@ class MetaMessage {
           : [],
       tags: msg['tags'],
       cred: msg['cred'] != null && msg['cred'].length != null
-          ? msg['cred'].map((Map<String, dynamic> cred) => UserCredential.fromMessage(cred)).toList()
+          ? msg['cred'].map((Map<String, dynamic> cred) => Credential.fromMessage(cred)).toList()
           : [],
       del: DeleteTransaction.fromMessage(msg['del']),
     );
