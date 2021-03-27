@@ -1,6 +1,3 @@
-import 'dart:math';
-
-import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/topic-description.dart';
@@ -12,11 +9,14 @@ import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/services/tools.dart';
+import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/values.dart';
 import 'package:tinode/src/topic.dart';
 import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
+import 'dart:math';
 
+/// Special case of Topic for managing data of the current user, including contact list
 class TopicMe extends Topic {
   /// List of contacts (topic_name -> Contact object)
   final Map<String, TopicSubscription> _contacts = {};
@@ -390,6 +390,7 @@ class TopicMe extends Topic {
     }
   }
 
+  /// Get cached read/received/message count for the given contact.
   int getMsgReadRecv(String contactName, String what) {
     var cont = _contacts[contactName];
     if (cont != null) {
