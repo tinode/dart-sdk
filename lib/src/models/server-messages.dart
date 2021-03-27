@@ -167,7 +167,7 @@ class PresMessage {
   final String what;
 
   /// "what" is "msg", a server-issued Id of the message, optional
-  final int seq;
+  int seq;
 
   /// "what" is "del", an update to the delete transaction Id.
   final int clear;

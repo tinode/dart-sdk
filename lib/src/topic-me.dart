@@ -1,8 +1,15 @@
+import 'dart:math';
+
+import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/cache-manager.dart';
+import 'package:tinode/src/models/contact-update.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/credential.dart';
+import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/services/tools.dart';
 import 'package:tinode/src/models/values.dart';
@@ -15,10 +22,10 @@ class TopicMe extends Topic {
   final Map<String, TopicSubscription> _contacts = {};
 
   /// This event will be triggered when a contact is updated
-  PublishSubject onContactUpdate = PublishSubject<dynamic>();
+  PublishSubject<ContactUpdateEvent> onContactUpdate = PublishSubject<ContactUpdateEvent>();
 
   /// This event will be triggered when credentials are updated
-  PublishSubject onCredsUpdated = PublishSubject<List<Credential>>();
+  PublishSubject<List<Credential>> onCredsUpdated = PublishSubject<List<Credential>>();
 
   // Credentials such as email or phone number.
   List<Credential> _credentials = [];
@@ -29,11 +36,16 @@ class TopicMe extends Topic {
   /// Cache manager service, responsible for read and write operations on cached data
   CacheManager _cacheManager;
 
+  /// Logger service, responsible for logging content in different levels
+  LoggerService _loggerService;
+
   TopicMe() : super(topic_names.TOPIC_ME) {
     _cacheManager = GetIt.I.get<CacheManager>();
     _tinodeService = GetIt.I.get<TinodeService>();
+    _loggerService = GetIt.I.get<LoggerService>();
   }
 
+  /// Override the original Topic.processMetaDesc.
   @override
   void processMetaDesc(TopicDescription desc) {
     // Check if online contacts need to be turned off because P permission was removed.
@@ -62,7 +74,7 @@ class TopicMe extends Topic {
           } else {
             cont.seen = Seen(when: DateTime.now());
           }
-          onContactUpdate.add({'status': 'off', 'contact': cont});
+          onContactUpdate.add(ContactUpdateEvent(what: 'off', contact: cont));
         }
       });
     }
@@ -70,6 +82,7 @@ class TopicMe extends Topic {
     onMetaSub.add(this);
   }
 
+  /// Override the original Topic.processMetaSub
   @override
   void processMetaSub(List<TopicSubscription> subscriptions) {
     for (var sub in subscriptions) {
@@ -131,6 +144,7 @@ class TopicMe extends Topic {
     onSubsUpdated.add(_contacts.values.toList());
   }
 
+  /// Called by Tinode when meta.sub is received.
   @override
   void processMetaCreds(List<Credential> creds, bool update) {
     // ignore: unrelated_type_equality_checks
@@ -181,7 +195,238 @@ class TopicMe extends Topic {
     onCredsUpdated.add(_credentials);
   }
 
-  dynamic getContact(String a) {}
-  dynamic getMsgReadRecv(String name, String what) {}
-  dynamic setMsgReadRecv(String name, String what, int seq, DateTime ts) {}
+  /// Process presence change message
+  @override
+  void routePres(PresMessage pres) {
+    if (pres.what == 'term') {
+      // The 'me' topic itself is detached. Mark as unsubscribed.
+      resetSubscription();
+      return;
+    }
+
+    if (pres.what == 'upd' && pres.src == topic_names.TOPIC_ME) {
+      // Update to me description. Request updated value.
+      getMeta(startMetaQuery().withDesc().build());
+      return;
+    }
+
+    var cont = _contacts[pres.src];
+    if (cont != null) {
+      switch (pres.what) {
+        case 'on':
+          // topic came online
+          cont.online = true;
+          break;
+        case 'off':
+          // topic went offline
+          if (cont.online) {
+            cont.online = false;
+            if (cont.seen != null) {
+              cont.seen.when = DateTime.now();
+            } else {
+              cont.seen = Seen(when: DateTime.now());
+            }
+          }
+          break;
+        case 'msg':
+          // new message received
+          cont.touched = DateTime.now();
+          cont.seq = pres.seq | 0;
+          // Check if message is sent by the current user. If so it's been read already.
+          if (pres.act == null || _tinodeService.isMe(pres.act)) {
+            cont.read = cont.read != null && cont.read != 0 ? max(cont.read, cont.seq) : cont.seq;
+            cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.read, cont.recv) : cont.read;
+          }
+          cont.unread = cont.seq - (cont.read | 0);
+          break;
+        case 'upd': // desc updated
+          // Request updated subscription.
+          getMeta(startMetaQuery().withLaterOneSub(pres.src).build());
+          break;
+        case 'acs':
+          // access mode changed
+          if (cont.acs != null) {
+            cont.acs.updateAll(pres.dacs);
+          } else {
+            cont.acs = AccessMode(null).updateAll(pres.dacs);
+          }
+          cont.touched = DateTime.now();
+          break;
+        case 'ua':
+          // user agent changed
+          cont.seen = Seen(when: DateTime.now(), ua: pres.ua);
+          break;
+        case 'recv': // user's other session marked some messages as received
+          pres.seq = pres.seq | 0;
+          cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.recv, pres.seq) : pres.seq;
+          break;
+        case 'read':
+          // user's other session marked some messages as read
+          pres.seq = pres.seq | 0;
+          cont.read = cont.read != null && cont.read != 0 ? max(cont.read, pres.seq) : pres.seq;
+          cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.read, cont.recv) : cont.recv;
+          cont.unread = cont.seq - cont.read;
+          break;
+        case 'gone':
+          // topic deleted or unsubscribed from
+          _contacts.remove(pres.src);
+          _cacheManager.delete('topic', pres.src);
+          break;
+        case 'del':
+          // Update topic.del value.
+          break;
+        default:
+          _loggerService.log("Unsupported presence update in 'me' " + pres.what);
+      }
+
+      onContactUpdate.add(ContactUpdateEvent(what: pres.what, contact: cont));
+    } else {
+      if (pres.what == 'acs') {
+        // New subscriptions and deleted/banned subscriptions have full
+        // access mode (no + or - in the dacs string). Changes to known subscriptions are sent as
+        // deltas, but they should not happen here.
+        var acs = AccessMode(pres.dacs);
+
+        if (acs == null || acs.mode == INVALID) {
+          _loggerService.error('Invalid access mode update ' + pres.src + ' ' + pres.dacs.toString());
+          return;
+        } else if (acs.mode == NONE) {
+          _loggerService.warn('Removing non-existent subscription ' + pres.src + ' ' + pres.dacs.toString());
+        } else {
+          // New subscription. Send request for the full description.
+          // Using .withOneSub (not .withLaterOneSub) to make sure IfModifiedSince is not set.
+          getMeta(startMetaQuery().withOneSub(null, pres.src).build());
+          // Create a dummy entry to catch online status update.
+          _contacts[pres.src] = TopicSubscription(touched: DateTime.now(), topic: pres.src, online: false, acs: acs);
+        }
+      } else if (pres.what == 'tags') {
+        getMeta(startMetaQuery().withTags().build());
+      }
+    }
+
+    onPres.add(pres);
+  }
+
+  @override
+  Future<CtrlMessage> publishMessage(Message a) {
+    return Future.error(Exception("Publishing to 'me' is not supported"));
+  }
+
+  /// Delete validation credential
+  Future<CtrlMessage> deleteCredential(String method, String value) async {
+    if (!isSubscribed) {
+      return Future.error(Exception("Cannot delete credential in inactive 'me' topic"));
+    }
+
+    // Send {del} message, return promise
+    var response = await _tinodeService.deleteCredential(method, value);
+    var ctrl = CtrlMessage.fromMessage(response);
+
+    // Remove deleted credential from the cache.
+    var index = _credentials.indexWhere((el) {
+      return el.meth == method && el.val == value;
+    });
+
+    if (index > -1) {
+      _credentials.removeAt(index);
+    }
+
+    onCredsUpdated.add(_credentials);
+    return ctrl;
+  }
+
+  List<TopicSubscription> get contacts {
+    return _contacts.values;
+  }
+
+  /// Update a cached contact with new read/received/message count
+  void setMsgReadRecv(String contactName, String what, int seq, DateTime ts) {
+    var cont = _contacts[contactName];
+    var oldVal, doUpdate = false;
+
+    if (cont != null) {
+      seq = seq ?? 0;
+      cont.seq = cont.seq ?? 0;
+      cont.read = cont.read ?? 0;
+      cont.recv = cont.recv ?? 0;
+      switch (what) {
+        case 'recv':
+          oldVal = cont.recv;
+          cont.recv = max(cont.recv, seq);
+          doUpdate = (oldVal != cont.recv);
+          break;
+        case 'read':
+          oldVal = cont.read;
+          cont.read = max(cont.read, seq);
+          doUpdate = (oldVal != cont.read);
+          break;
+        case 'msg':
+          oldVal = cont.seq;
+          cont.seq = max(cont.seq, seq);
+          if (cont.touched == null || cont.touched.isBefore(ts)) {
+            cont.touched = ts;
+          }
+          doUpdate = (oldVal != cont.seq);
+          break;
+      }
+
+      // Sanity checks.
+      if (cont.recv < cont.read) {
+        cont.recv = cont.read;
+        doUpdate = true;
+      }
+      if (cont.seq < cont.recv) {
+        cont.seq = cont.recv;
+        if (cont.touched == null || cont.touched.isBefore(ts)) {
+          cont.touched = ts;
+        }
+        doUpdate = true;
+      }
+      cont.unread = cont.seq - cont.read;
+
+      if (doUpdate && (cont.acs == null || !cont.acs.isMuted(null))) {
+        onContactUpdate.add(ContactUpdateEvent(what: what, contact: cont));
+      }
+    }
+  }
+
+  int getMsgReadRecv(String contactName, String what) {
+    var cont = _contacts[contactName];
+    if (cont != null) {
+      switch (what) {
+        case 'recv':
+          return cont.recv ?? 0;
+        case 'read':
+          return cont.read ?? 0;
+        case 'msg':
+          return cont.seq ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  /// Get a contact from cache
+  TopicSubscription getContact(String topicName) {
+    return _contacts[topicName];
+  }
+
+  /// Get access mode of a given contact from cache
+  AccessMode getContactAccessMode(String topicName) {
+    if (topicName != null && topicName.isNotEmpty) {
+      var cont = _contacts[topicName];
+      return cont != null ? cont.acs : null;
+    }
+    return null;
+  }
+
+  /// Check if contact is archived, i.e. contact.private.arch == true.
+  bool isContactArchived(String topicName) {
+    var cont = _contacts[topicName];
+    return cont != null ? ((cont.private && cont.private.arch) ? true : false) : null;
+  }
+
+  /// Get the user's credentials: email, phone, etc.
+  List<Credential> getCredentials() {
+    return _credentials;
+  }
 }

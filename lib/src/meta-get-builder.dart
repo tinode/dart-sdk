@@ -23,4 +23,7 @@ class MetaGetBuilder {
   dynamic withEarlierData(dynamic a) {}
   dynamic withOneSub(dynamic a, dynamic b) {}
   dynamic build() {}
+  dynamic withDesc() {}
+  dynamic withLaterOneSub(dynamic a) {}
+  dynamic withTags() {}
 }
