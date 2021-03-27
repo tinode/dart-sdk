@@ -206,7 +206,7 @@ class TopicMe extends Topic {
 
     if (pres.what == 'upd' && pres.src == topic_names.TOPIC_ME) {
       // Update to me description. Request updated value.
-      getMeta(startMetaQuery().withDesc().build());
+      getMeta(startMetaQuery().withDesc(null).build());
       return;
     }
 

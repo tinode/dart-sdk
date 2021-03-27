@@ -1075,4 +1075,24 @@ class Topic {
       _messages.put(gap);
     });
   }
+
+  DateTime get lastDescUpdate {
+    return _lastDescUpdate;
+  }
+
+  DateTime get lastSubsUpdate {
+    return _lastSubsUpdate;
+  }
+
+  int get maxSeq {
+    return _maxSeq;
+  }
+
+  int get minSeq {
+    return _minSeq;
+  }
+
+  int get maxDel {
+    return _maxDel;
+  }
 }
