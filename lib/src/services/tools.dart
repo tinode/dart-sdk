@@ -49,6 +49,11 @@ class Tools {
       'usr': 'p2p',
       'sys': 'sys',
     };
+
+    if (topicName.length == 2) {
+      return types[topicName.substring(0, 2)];
+    }
+
     return types[topicName.substring(0, 3)];
   }
 

@@ -167,7 +167,7 @@ class TinodeService {
       _loggerService.log('out: ' + json);
     } catch (e) {
       if (pkt.id != null) {
-        print(e);
+        _loggerService.error(e);
         _futureManager.execFuture(pkt.id, _configService.appSettings.networkError, null, 'Error');
       } else {
         rethrow;
@@ -315,10 +315,10 @@ class TinodeService {
     var packet = _packetGenerator.generate(packet_types.Get, topicName);
     GetPacketData data = packet.data;
 
-    data.data = params.data;
-    data.desc = params.desc;
+    data.data = params.data.toMap();
+    data.desc = params.desc.toMap();
     data.what = params.what;
-    data.sub = params.sub;
+    data.sub = params.sub.toMap();
 
     packet.data = data;
     return _send(packet);

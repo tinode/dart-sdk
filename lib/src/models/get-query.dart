@@ -14,6 +14,17 @@ class GetOptsType {
       user: msg['user'],
     );
   }
+
+  Map<String, dynamic> toMap() {
+    var map = {
+      'ims': ims != null ? ims.toIso8601String() : null,
+      'limit': limit,
+      'topic': topic,
+      'user': user,
+    };
+    map.removeWhere((key, value) => value == null);
+    return map;
+  }
 }
 
 class GetDataType {
@@ -29,6 +40,16 @@ class GetDataType {
       before: msg['before'],
       limit: msg['limit'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    var map = {
+      'since': since,
+      'before': before,
+      'limit': limit,
+    };
+    map.removeWhere((key, value) => value == null);
+    return map;
   }
 }
 
@@ -47,11 +68,25 @@ class GetQuery {
     return GetQuery(
       cred: msg['cred'],
       what: msg['what'],
-      data: GetDataType.fromMessage(msg['data']),
-      del: GetDataType.fromMessage(msg['del']),
-      desc: GetOptsType.fromMessage(msg['desc']),
-      sub: GetOptsType.fromMessage(msg['sub']),
+      data: msg['data'] != null ? GetDataType.fromMessage(msg['data']) : null,
+      del: msg['del'] != null ? GetDataType.fromMessage(msg['del']) : null,
+      desc: msg['desc'] != null ? GetOptsType.fromMessage(msg['desc']) : null,
+      sub: msg['sub'] != null ? GetOptsType.fromMessage(msg['sub']) : null,
       tags: msg['tags'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    var map = {
+      'cred': cred,
+      'what': what,
+      'data': data,
+      'del': del,
+      'desc': desc,
+      'sub': sub.toMap(),
+      'tags': tags,
+    };
+    map.removeWhere((key, value) => value == null);
+    return map;
   }
 }

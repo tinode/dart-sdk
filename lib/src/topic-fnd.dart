@@ -26,7 +26,7 @@ class TopicFnd extends Topic {
     }
 
     if (updateCount > 0) {
-      onSubsUpdated.add(_contacts.keys);
+      onSubsUpdated.add(_contacts.values);
     }
   }
 

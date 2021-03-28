@@ -13,6 +13,7 @@ import 'package:tinode/src/models/set-params.dart';
 import 'package:tinode/src/meta-get-builder.dart';
 import 'package:tinode/src/models/del-range.dart';
 import 'package:tinode/src/models/get-query.dart';
+import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/models/message.dart';
 import 'package:tinode/src/models/def-acs.dart';
@@ -79,7 +80,7 @@ class Topic {
   final SortedCache<DataMessage> _messages = SortedCache<DataMessage>((a, b) => a.seq - b.seq, true);
 
   /// true if the topic is currently live
-  bool _subscribed;
+  bool _subscribed = false;
 
   /// Timestamp when topic meta-desc update was received
   DateTime _lastDescUpdate;
@@ -120,32 +121,35 @@ class Topic {
   /// Configuration service, responsible for storing library config and information
   ConfigService _configService;
 
+  /// Logger service, responsible for logging content in different levels
+  LoggerService _loggerService;
+
   /// This event will be triggered when a `data` message is received
-  PublishSubject onData = PublishSubject<DataMessage>();
+  PublishSubject<DataMessage> onData = PublishSubject<DataMessage>();
 
   /// This event will be triggered when a `meta` message is received
-  PublishSubject onMeta = PublishSubject<MetaMessage>();
+  PublishSubject<MetaMessage> onMeta = PublishSubject<MetaMessage>();
 
   /// This event will be triggered when a `meta.desc` message is received
-  PublishSubject onMetaDesc = PublishSubject<Topic>();
+  PublishSubject<Topic> onMetaDesc = PublishSubject<Topic>();
 
   /// This event will be triggered when a `meta.sub` message is received
-  PublishSubject onMetaSub = PublishSubject<TopicSubscription>();
+  PublishSubject<TopicSubscription> onMetaSub = PublishSubject<TopicSubscription>();
 
   /// This event will be triggered when a `pres` message is received
-  PublishSubject onPres = PublishSubject<PresMessage>();
+  PublishSubject<PresMessage> onPres = PublishSubject<PresMessage>();
 
   /// This event will be triggered when a `meta.info` message is received
-  PublishSubject onInfo = PublishSubject<InfoMessage>();
+  PublishSubject<InfoMessage> onInfo = PublishSubject<InfoMessage>();
 
   /// This event will be triggered when topic subscriptions are updated
-  PublishSubject onSubsUpdated = PublishSubject<List<TopicSubscription>>();
+  PublishSubject<List<TopicSubscription>> onSubsUpdated = PublishSubject<List<TopicSubscription>>();
 
   /// This event will be triggered when topic tags are updated
-  PublishSubject onTagsUpdated = PublishSubject<List<String>>();
+  PublishSubject<List<String>> onTagsUpdated = PublishSubject<List<String>>();
 
   /// This event will be triggered when all messages are received
-  PublishSubject onAllMessagesReceived = PublishSubject<int>();
+  PublishSubject<int> onAllMessagesReceived = PublishSubject<int>();
 
   Topic(String topicName) {
     _resolveDependencies();
@@ -155,6 +159,7 @@ class Topic {
   void _resolveDependencies() {
     _authService = GetIt.I.get<AuthService>();
     _cacheManager = GetIt.I.get<CacheManager>();
+    _loggerService = GetIt.I.get<LoggerService>();
     _tinodeService = GetIt.I.get<TinodeService>();
     _configService = GetIt.I.get<ConfigService>();
   }
@@ -173,7 +178,12 @@ class Topic {
     // Send subscribe message, handle async response.
     // If topic name is explicitly provided, use it. If no name, then it's a new group topic, use "new".
     var response = await _tinodeService.subscribe(name ?? topic_names.TOPIC_NEW, getParams, setParams);
-    var ctrl = CtrlMessage.fromMessage(response);
+    var ctrl = response is CtrlMessage ? response : null;
+    var meta = response is MetaMessage ? response : null;
+
+    if (meta != null) {
+      return null;
+    }
 
     if (ctrl.code >= 300) {
       // Do nothing if the topic is already subscribed to.
@@ -242,8 +252,8 @@ class Topic {
       routeData(message.asDataMessage(_authService.userId, seq));
       return ctrl;
     } catch (e) {
-      print('WARNING: Message rejected by the server');
-      print(e.toString());
+      _loggerService.warn('Message rejected by the server');
+      _loggerService.warn(e.toString());
       message.setStatus(message_status.FAILED);
       onData.add(null);
       return null;
@@ -484,7 +494,7 @@ class Topic {
     // Remove the object from the subscription cache;
     _users.remove(userId);
     // Notify listeners
-    onSubsUpdated.add(_users);
+    onSubsUpdated.add(_users.values);
     return CtrlMessage.fromMessage((ctrl));
   }
 
@@ -768,7 +778,7 @@ class Topic {
         if (user != null) {
           user.online = pres.what == 'on';
         } else {
-          print('WARNING: Presence update for an unknown user ' + name + ' ' + pres.src);
+          _loggerService.warn('Presence update for an unknown user' + name + ' ' + pres.src);
         }
         break;
 
@@ -806,7 +816,7 @@ class Topic {
 
         break;
       default:
-        print('INFO: Ignored presence update ' + pres.what);
+        _loggerService.log('Ignored presence update ' + pres.what);
     }
 
     onPres.add(pres);
@@ -881,7 +891,7 @@ class Topic {
       }
     }
 
-    onMetaSub.add(this);
+    onMetaDesc.add(this);
   }
 
   /// Called by `Tinode` when meta.sub is received or in response to received
@@ -973,25 +983,30 @@ class Topic {
   TopicSubscription _updateCachedUser(String userId, TopicSubscription object) {
     var cached = _cacheManager.getUser(userId);
 
-    cached.acs = object.acs ?? cached.acs;
-    cached.clear = object.clear ?? cached.clear;
-    cached.created = object.created ?? cached.created;
-    cached.deleted = cached.deleted ?? cached.deleted;
-    cached.mode = object.mode ?? cached.mode;
-    cached.noForwarding = object.mode ?? cached.noForwarding;
-    cached.online = object.online ?? cached.online;
-    cached.private = object.private ?? cached.private;
-    cached.public = object.public ?? cached.public;
-    cached.read = object.read ?? cached.read;
-    cached.recv = object.recv ?? cached.recv;
-    cached.seen = object.seen ?? cached.seen;
-    cached.seen = object.seen ?? cached.seen;
-    cached.topic = object.topic ?? cached.topic;
-    cached.touched = object.touched ?? cached.touched;
-    cached.updated = object.updated ?? cached.updated;
-    cached.user = object.user ?? cached.user;
+    if (cached != null) {
+      cached.acs = object.acs ?? cached.acs;
+      cached.clear = object.clear ?? cached.clear;
+      cached.created = object.created ?? cached.created;
+      cached.deleted = cached.deleted ?? cached.deleted;
+      cached.mode = object.mode ?? cached.mode;
+      cached.noForwarding = object.mode ?? cached.noForwarding;
+      cached.online = object.online ?? cached.online;
+      cached.private = object.private ?? cached.private;
+      cached.public = object.public ?? cached.public;
+      cached.read = object.read ?? cached.read;
+      cached.recv = object.recv ?? cached.recv;
+      cached.seen = object.seen ?? cached.seen;
+      cached.seen = object.seen ?? cached.seen;
+      cached.topic = object.topic ?? cached.topic;
+      cached.touched = object.touched ?? cached.touched;
+      cached.updated = object.updated ?? cached.updated;
+      cached.user = object.user ?? cached.user;
+      _cacheManager.putUser(userId, cached);
+    } else {
+      _cacheManager.putUser(userId, object);
+      cached = object;
+    }
 
-    _cacheManager.putUser(userId, cached);
     _users[userId] = cached;
     return _users[userId];
   }

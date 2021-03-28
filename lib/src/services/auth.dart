@@ -1,5 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:tinode/src/models/auth-token.dart';
+import 'package:tinode/src/models/server-messages.dart';
 
 class AuthService {
   String _userId;
@@ -37,14 +38,14 @@ class AuthService {
     _userId = userId;
   }
 
-  void onLoginSuccessful(Map<String, dynamic> ctrl) {
-    var params = ctrl['params'];
+  void onLoginSuccessful(CtrlMessage ctrl) {
+    var params = ctrl.params;
     if (params == null || params['user'] == null) {
       return;
     }
 
     _userId = params['user'];
-    _authenticated = ctrl['code'] >= 200 && ctrl['code'] < 300;
+    _authenticated = ctrl.code >= 200 && ctrl.code < 300;
 
     if (params['token'] != null && params['expires'] != null) {
       _authToken = AuthToken(token: params['token'], expires: DateTime.parse(params['expires']));
@@ -52,6 +53,6 @@ class AuthService {
       _authToken = null;
     }
 
-    onLogin.add(OnLoginData(code: ctrl['code'], text: ctrl['text']));
+    onLogin.add(OnLoginData(code: ctrl.code, text: ctrl.text));
   }
 }

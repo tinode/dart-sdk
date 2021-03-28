@@ -11,12 +11,10 @@ import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/server-configuration.dart';
 import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/packet-generator.dart';
-export 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/services/future-manager.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/models/account-params.dart';
-export 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/services/connection.dart';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/set-params.dart';
@@ -31,6 +29,34 @@ import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/topic-fnd.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
+
+export 'package:tinode/src/meta-get-builder.dart';
+export 'package:tinode/src/sorted-cache.dart';
+export 'package:tinode/src/topic-fnd.dart';
+export 'package:tinode/src/topic-me.dart';
+export 'package:tinode/src/topic.dart';
+
+export 'package:tinode/src/services/tools.dart';
+
+export 'package:tinode/src/models/server-configuration.dart';
+export 'package:tinode/src/models/connection-options.dart';
+export 'package:tinode/src/models/delete-transaction.dart';
+export 'package:tinode/src/models/topic-subscription.dart';
+export 'package:tinode/src/models/topic-description.dart';
+export 'package:tinode/src/models/server-messages.dart';
+export 'package:tinode/src/models/account-params.dart';
+export 'package:tinode/src/models/message-status.dart';
+export 'package:tinode/src/models/contact-update.dart';
+export 'package:tinode/src/models/configuration.dart';
+export 'package:tinode/src/models/packet-types.dart';
+export 'package:tinode/src/models/packet-data.dart';
+export 'package:tinode/src/models/auth-token.dart';
+export 'package:tinode/src/models/auth-token.dart';
+export 'package:tinode/src/models/credential.dart';
+export 'package:tinode/src/models/set-params.dart';
+export 'package:tinode/src/models/del-range.dart';
+export 'package:tinode/src/models/get-query.dart';
+export 'package:tinode/src/models/def-acs.dart';
 
 /// Provides a simple interface to interact with tinode server using websocket
 class Tinode {
@@ -244,19 +270,22 @@ class Tinode {
   /// * Device token for notifications
   /// * Language
   /// * Platform
-  Future hello({String deviceToken}) async {
-    var ctrl;
+  Future<CtrlMessage> hello({String deviceToken}) async {
+    CtrlMessage ctrl;
     if (deviceToken != null) {
       ctrl = await _tinodeService.hello(deviceToken: deviceToken);
     } else {
       ctrl = await _tinodeService.hello();
     }
-    _configService.setServerConfiguration(ctrl['params']);
+
+    if (ctrl.params != null) {
+      _configService.setServerConfiguration(ctrl.params);
+    }
     return ctrl;
   }
 
   /// Wrapper for `hello`, sends hi packet again containing device token
-  Future setDeviceToken(String deviceToken) {
+  Future<CtrlMessage> setDeviceToken(String deviceToken) {
     return hello(deviceToken: deviceToken);
   }
 
@@ -470,13 +499,15 @@ class Tinode {
 
   /// Check if given topic is online
   bool isTopicOnline(String topicName) {
-    // TODO: Needs implementation of me topic
-    return false;
+    var me = getMeTopic();
+    var cont = me != null ? me.getContact(topicName) : null;
+    return cont != null && cont.online;
   }
 
   /// Get access mode for the given contact
-  AccessMode getTopicAccessMode() {
-    // TODO: Needs implementation of me topic
-    return AccessMode('');
+  AccessMode getTopicAccessMode(String topicName) {
+    var me = getMeTopic();
+    var cont = me != null ? me.getContact(topicName) : null;
+    return cont != null ? cont.acs : null;
   }
 }

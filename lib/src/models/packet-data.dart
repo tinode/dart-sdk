@@ -88,7 +88,7 @@ class SubPacketData extends PacketData {
     return {
       'topic': topic,
       'set': set,
-      'get': get,
+      'get': get.toMap(),
     };
   }
 }

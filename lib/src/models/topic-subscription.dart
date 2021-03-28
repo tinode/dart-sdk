@@ -11,7 +11,7 @@ class Seen {
 
   Seen({this.when, this.ua});
 
-  static Seen fromMessages(Map<String, String> msg) {
+  static Seen fromMessages(Map<String, dynamic> msg) {
     return Seen(
       ua: msg['ua'],
       when: msg['when'] != null ? DateTime.parse(msg['when']) : DateTime.now(),
@@ -78,7 +78,7 @@ class TopicSubscription {
   /// can be used only when querying 'me' topic
   Seen seen;
 
-  bool noForwarding;
+  bool noForwarding = false;
 
   String mode;
 
@@ -122,7 +122,7 @@ class TopicSubscription {
       topic: msg['topic'],
       seq: msg['seq'],
       seen: msg['seen'] != null ? Seen.fromMessages(msg['seen']) : null,
-      noForwarding: msg['noForwarding'],
+      noForwarding: msg['noForwarding'] ?? false,
       mode: msg['mode'],
     );
   }

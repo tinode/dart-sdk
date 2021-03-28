@@ -79,7 +79,7 @@ class TopicMe extends Topic {
       });
     }
 
-    onMetaSub.add(this);
+    onMetaDesc.add(this);
   }
 
   /// Override the original Topic.processMetaSub
@@ -106,23 +106,29 @@ class TopicMe extends Topic {
         }
 
         var cached = _contacts[topicName];
-        cached.acs = sub.acs ?? cached.acs;
-        cached.clear = sub.clear ?? cached.clear;
-        cached.created = sub.created ?? cached.created;
-        cached.deleted = cached.deleted ?? cached.deleted;
-        cached.mode = sub.mode ?? cached.mode;
-        cached.noForwarding = sub.mode ?? cached.noForwarding;
-        cached.online = sub.online ?? cached.online;
-        cached.private = sub.private ?? cached.private;
-        cached.public = sub.public ?? cached.public;
-        cached.read = sub.read ?? cached.read;
-        cached.recv = sub.recv ?? cached.recv;
-        cached.seen = sub.seen ?? cached.seen;
-        cached.seen = sub.seen ?? cached.seen;
-        cached.topic = sub.topic ?? cached.topic;
-        cached.touched = sub.touched ?? cached.touched;
-        cached.updated = sub.updated ?? cached.updated;
-        cached.user = sub.user ?? cached.user;
+        if (cached != null) {
+          cached.acs = sub.acs ?? cached.acs;
+          cached.clear = sub.clear ?? cached.clear;
+          cached.created = sub.created ?? cached.created;
+          cached.deleted = cached.deleted ?? cached.deleted;
+          cached.mode = sub.mode ?? cached.mode;
+          cached.noForwarding = sub.mode ?? cached.noForwarding;
+          cached.online = sub.online ?? cached.online;
+          cached.private = sub.private ?? cached.private;
+          cached.public = sub.public ?? cached.public;
+          cached.read = sub.read ?? cached.read;
+          cached.recv = sub.recv ?? cached.recv;
+          cached.seen = sub.seen ?? cached.seen;
+          cached.seen = sub.seen ?? cached.seen;
+          cached.topic = sub.topic ?? cached.topic;
+          cached.touched = sub.touched ?? cached.touched;
+          cached.updated = sub.updated ?? cached.updated;
+          cached.user = sub.user ?? cached.user;
+        } else {
+          cached = sub;
+          _contacts[topicName] = sub;
+        }
+        cont = cached;
 
         if (Tools.isP2PTopicName(topicName)) {
           _cacheManager.putUser(topicName, cont);

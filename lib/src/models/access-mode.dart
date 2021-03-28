@@ -35,7 +35,7 @@ class AccessMode {
       _given = acs['given'] is int ? acs['given'] : AccessMode.decode(acs['given']);
       _want = acs['want'] is int ? acs['want'] : AccessMode.decode(acs['given']);
 
-      if (acs['mode']) {
+      if (acs['mode'] != null) {
         if (acs['mode'] is int) {
           mode = acs['mode'];
         } else {
@@ -69,13 +69,15 @@ class AccessMode {
 
     var m0 = NONE;
 
-    for (var i = 0; i < mode.length; i++) {
-      var bit = bitmask[mode[i].toUpperCase()];
-      if (bit == null) {
-        // Unrecognized bit, skip.
-        continue;
+    if (mode != null) {
+      for (var i = 0; i < mode.length; i++) {
+        var bit = bitmask[mode[i].toUpperCase()];
+        if (bit == null) {
+          // Unrecognized bit, skip.
+          continue;
+        }
+        m0 |= bit;
       }
-      m0 |= bit;
     }
     return m0;
   }
