@@ -133,7 +133,7 @@ class TinodeService {
   void handlePresMessage(PresMessage pres) {
     onPresMessage.add(pres);
 
-    Topic topic = _cacheManager.get('topic', pres.topic);
+    Topic topic = pres.topic != null ? _cacheManager.get('topic', pres.topic) : null;
     if (topic != null) {
       topic.routePres(pres);
     }

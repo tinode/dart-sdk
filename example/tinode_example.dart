@@ -9,11 +9,15 @@ void main(List<String> args) async {
   await tinode.loginBasic('alice', 'alice123', null);
 
   var me = tinode.getMeTopic();
-  me.onSubsUpdated.listen((value) {
-    for (var v in value) {
-      print(v.topic);
+  await me.subscribe(MetaGetBuilder(me).withLaterSub(null).build(), null);
+
+  var grp = tinode.getTopic('grpNfK5pjIxPto');
+  grp.onData.listen((value) {
+    if (value != null) {
+      print(value.seq);
     }
   });
-
-  await me.subscribe(MetaGetBuilder(me).withLaterSub(null).build(), null);
+  await grp.subscribe(MetaGetBuilder(grp).withLaterSub(null).withLaterData(null).build(), null);
+  var msg = grp.createMessage('This is cool', true);
+  await grp.publishMessage(msg);
 }

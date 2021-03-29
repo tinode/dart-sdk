@@ -49,7 +49,7 @@ class SortedCache<T> {
   List<T> insertSorted(T element, List<T> array) {
     var found = findNearest(element, array, false);
     var count = (found['exact'] == true && unique) ? 1 : found['idx'];
-    array.replaceRange(found.idx, count, [element]);
+    array.replaceRange(found['idx'], count, [element]);
     return array;
   }
 

@@ -68,7 +68,7 @@ class Topic {
   int _minSeq = 0;
 
   /// Indicator that the last request for earlier messages returned 0
-  bool _noEarlierMsgs;
+  bool _noEarlierMsgs = false;
 
   /// The maximum known deletion ID
   int _maxDel = 0;
@@ -1013,15 +1013,15 @@ class Topic {
 
   /// Calculate ranges of missing messages
   void _updateDeletedRanges() {
-    var ranges = [];
-    var prev;
+    var ranges = <DataMessage>[];
+    DataMessage prev;
 
     // Check for gap in the beginning, before the first message.
-    var first = _messages.getAt(0);
+    var first = _messages.length > 0 ? _messages.getAt(0) : null;
 
     if (first != null && _minSeq > 1 && !_noEarlierMsgs) {
       // Some messages are missing in the beginning.
-      if (first.hi > 0) {
+      if (first.hi != null && first.hi > 0) {
         // The first message already represents a gap.
         if (first.seq > 1) {
           first.seq = 1;
@@ -1032,12 +1032,12 @@ class Topic {
         prev = first;
       } else {
         // Create new gap.
-        prev = {'seq': 1, 'hi': _minSeq - 1};
+        prev = DataMessage(seq: 1, hi: _minSeq - 1);
         ranges.add(prev);
       }
     } else {
       // No gap in the beginning.
-      prev = {'seq': 0, 'hi': 0};
+      prev = DataMessage(seq: 0, hi: 0);
     }
 
     // Find gaps in the list of received messages. The list contains messages-proper as well
@@ -1050,44 +1050,44 @@ class Topic {
       }
 
       // New message is reducing the existing gap
-      if (data.seq == (prev['hi'] > 0 ? prev['hi'] : prev.seq) + 1) {
+      if (data.seq == ((prev.hi != null && prev.hi > 0) ? prev.hi : prev.seq) + 1) {
         // No new gap. Replace previous with current.
         prev = data;
         return;
       }
 
       // Found a new gap.
-      if (prev['hi']) {
+      if (prev.hi != null && prev.hi != 0) {
         // Previous is also a gap, alter it.
-        prev['hi'] = data.hi > 0 ? data.hi : data.seq;
+        prev.hi = data.hi > 0 ? data.hi : data.seq;
         return;
       }
 
       // Previous is not a gap. Create a new gap.
-      prev = {
-        'seq': (data.hi > 0 ? data.hi : data.seq) + 1,
-        'hi': data.hi > 0 ? data.hi : data.seq,
-      };
+      prev = DataMessage(
+        seq: (data.hi > 0 ? data.hi : data.seq) + 1,
+        hi: data.hi > 0 ? data.hi : data.seq,
+      );
       ranges.add(prev);
     }, null, null);
 
     // Check for missing messages at the end.
     // All messages could be missing or it could be a new topic with no messages.
-    var last = _messages.getLast();
+    var last = _messages.length > 0 ? _messages.getLast() : null;
     var maxSeq = max(seq, _maxSeq) ?? 0;
-    if ((maxSeq > 0 && last == null) || (last != null && ((last.hi > 0 ? last.hi : last.seq) < maxSeq))) {
+    if ((maxSeq > 0 && last == null) || (last != null && (((last.hi != null && last.hi > 0) ? last.hi : last.seq) < maxSeq))) {
       if (last != null && last.hi > 0) {
         // Extend existing gap
         last.hi = maxSeq;
       } else {
         // Create new gap.
-        ranges.add({'seq': last != null ? last.seq + 1 : 1, 'hi': maxSeq});
+        ranges.add(DataMessage(seq: last != null ? last.seq + 1 : 1, hi: maxSeq));
       }
     }
 
     // Insert new gaps into cache.
     ranges.map((gap) {
-      _messages.put(gap);
+      _messages.put([gap]);
     });
   }
 

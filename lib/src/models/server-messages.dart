@@ -127,7 +127,7 @@ class DataMessage {
   /// object, application-defined content exactly as published by the user in the {pub} message
   final dynamic content;
 
-  final bool noForwarding;
+  bool noForwarding = false;
 
   int hi;
 
@@ -147,10 +147,10 @@ class DataMessage {
       topic: msg['topic'],
       from: msg['from'],
       head: msg['head'],
-      ts: msg['ts'] != null ? DateTime.parse(msg['ts']) : null,
+      ts: msg['ts'],
       seq: msg['seq'],
       content: msg['content'],
-      noForwarding: msg['noForwarding'],
+      noForwarding: msg['noForwarding'] ?? false,
       hi: msg['hi'],
     );
   }

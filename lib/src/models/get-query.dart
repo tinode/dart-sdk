@@ -80,10 +80,10 @@ class GetQuery {
     var map = {
       'cred': cred,
       'what': what,
-      'data': data,
-      'del': del,
-      'desc': desc,
-      'sub': sub.toMap(),
+      'data': data != null ? data.toMap() : null,
+      'del': del != null ? del.toMap() : null,
+      'desc': desc != null ? desc.toMap() : null,
+      'sub': sub != null ? sub.toMap() : null,
       'tags': tags,
     };
     map.removeWhere((key, value) => value == null);
