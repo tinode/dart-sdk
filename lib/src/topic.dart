@@ -1076,7 +1076,7 @@ class Topic {
     var last = _messages.length > 0 ? _messages.getLast() : null;
     var maxSeq = max(seq, _maxSeq) ?? 0;
     if ((maxSeq > 0 && last == null) || (last != null && (((last.hi != null && last.hi > 0) ? last.hi : last.seq) < maxSeq))) {
-      if (last != null && last.hi > 0) {
+      if (last != null && (last.hi != null && last.hi > 0)) {
         // Extend existing gap
         last.hi = maxSeq;
       } else {
