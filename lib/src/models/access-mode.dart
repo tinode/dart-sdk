@@ -48,7 +48,7 @@ class AccessMode {
   }
 
   static int decode(dynamic mode) {
-    if (mode != null) {
+    if (mode == null) {
       return null;
     } else if (mode is int) {
       return mode & AccessModePermissionsBITMASK;
