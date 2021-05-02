@@ -30,4 +30,14 @@ void main() {
   test('encode() encode integer to string for mode', () {
     expect(AccessMode.encode(14), equals('RWP'));
   });
+
+  test('update() updates mode with given update', () {
+    expect(AccessMode.update(14, '+S'), equals(46));
+    expect(AccessMode.encode(46), 'RWPS');
+  });
+
+  test('diff() returns the diff between two modes', () {
+    expect(AccessMode.diff('RWP', 'RW'), equals(8));
+    expect(AccessMode.encode(8), equals('P'));
+  });
 }

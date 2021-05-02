@@ -102,7 +102,7 @@ class AccessMode {
     return res;
   }
 
-  /// Updates mode with new permissions
+  /// Updates mode with newly given permissions
   static int update(int val, String upd) {
     if (upd == null || !(upd is String)) {
       return val;
@@ -152,6 +152,7 @@ class AccessMode {
     return val;
   }
 
+  /// Get diff from two modes
   static int diff(dynamic a1, dynamic a2) {
     var a1d = AccessMode.decode(a1);
     var a2d = AccessMode.decode(a2);
