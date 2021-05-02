@@ -163,6 +163,9 @@ class AccessMode {
     return a1d & ~a2d;
   }
 
+  /// Returns true if AccessNode has x flag
+  ///
+  /// side: `mode` / `want` / `given`
   static bool checkFlag(AccessMode val, String side, int flag) {
     side ??= 'mode';
     var found = ['given', 'want', 'mode'].where((s) {
@@ -175,6 +178,10 @@ class AccessMode {
     throw Exception('Invalid AccessMode component "' + side + '"');
   }
 
+  String getMode() {
+    return AccessMode.encode(mode);
+  }
+
   AccessMode setMode(dynamic mode) {
     this.mode = AccessMode.decode(mode);
     return this;
@@ -185,8 +192,8 @@ class AccessMode {
     return this;
   }
 
-  String getMode() {
-    return AccessMode.encode(mode);
+  String getGiven() {
+    return AccessMode.encode(_given);
   }
 
   AccessMode setGiven(dynamic given) {
@@ -199,8 +206,8 @@ class AccessMode {
     return this;
   }
 
-  String getGiven() {
-    return AccessMode.encode(_given);
+  String getWant() {
+    return AccessMode.encode(_want);
   }
 
   AccessMode setWant(dynamic want) {
@@ -211,10 +218,6 @@ class AccessMode {
   AccessMode updateWant(String update) {
     _want = AccessMode.update(_want, update);
     return this;
-  }
-
-  String getWant() {
-    return AccessMode.encode(_want);
   }
 
   String getMissing() {
