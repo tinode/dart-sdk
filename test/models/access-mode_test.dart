@@ -18,4 +18,16 @@ void main() {
   test('decode() decodes string to integer for mode', () {
     expect(AccessMode.decode('RWP'), equals(14));
   });
+
+  test('encode() returns null for null value', () {
+    expect(AccessMode.encode(null), equals(null));
+  });
+
+  test('encode() returns none for 0', () {
+    expect(AccessMode.encode(0), equals('N'));
+  });
+
+  test('encode() encode integer to string for mode', () {
+    expect(AccessMode.encode(14), equals('RWP'));
+  });
 }

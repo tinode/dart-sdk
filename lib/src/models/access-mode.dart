@@ -47,6 +47,7 @@ class AccessMode {
     }
   }
 
+  /// Decodes string mode to integer
   static int decode(dynamic mode) {
     if (mode == null) {
       return null;
@@ -82,6 +83,7 @@ class AccessMode {
     return m0;
   }
 
+  /// Decodes integer mode to string
   static String encode(int val) {
     if (val == null || val == INVALID) {
       return null;
@@ -100,6 +102,7 @@ class AccessMode {
     return res;
   }
 
+  /// Updates mode with new permissions
   static int update(int val, String upd) {
     if (upd == null || !(upd is String)) {
       return val;
@@ -113,7 +116,6 @@ class AccessMode {
       // Split delta-string like '+ABC-DEF+Z' into an array of parts including + and -.
       var parts = upd.split(RegExp(r'([-+])'));
       var actions = upd.split(RegExp(r'\w+'));
-      var result = [];
 
       actions = actions.where((value) {
         return value != '';
