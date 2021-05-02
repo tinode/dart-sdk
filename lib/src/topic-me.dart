@@ -342,7 +342,7 @@ class TopicMe extends Topic {
   }
 
   List<TopicSubscription> get contacts {
-    return _contacts.values;
+    return _contacts.values.toList();
   }
 
   /// Update a cached contact with new read/received/message count
