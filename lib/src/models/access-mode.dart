@@ -33,7 +33,7 @@ class AccessMode {
   AccessMode(dynamic acs) {
     if (acs != null) {
       _given = acs['given'] is int ? acs['given'] : AccessMode.decode(acs['given']);
-      _want = acs['want'] is int ? acs['want'] : AccessMode.decode(acs['given']);
+      _want = acs['want'] is int ? acs['want'] : AccessMode.decode(acs['want']);
 
       if (acs['mode'] != null) {
         if (acs['mode'] is int) {

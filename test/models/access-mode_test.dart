@@ -98,4 +98,69 @@ void main() {
     a.updateWant('+S');
     expect(a.getWant(), equals('RWPS'));
   });
+
+  test('getMissing() returns missing permission', () {
+    var a = AccessMode({'mode': 'RW', 'given': 'RW', 'want': 'RWS'});
+    expect(a.getMissing(), equals('S'));
+  });
+
+  test('getExcessive() returns excessive permission', () {
+    var a = AccessMode({'mode': 'RW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.getExcessive(), equals('S'));
+  });
+
+  test('updateAll() updates all mode, given, want permissions', () {
+    var a = AccessMode({'mode': 'RW', 'given': 'RW', 'want': 'RW'});
+    var b = AccessMode({'mode': 'RWS', 'given': 'RWS', 'want': 'RWS'});
+    a.updateAll(b);
+    expect(a.getMode(), equals('RWS'));
+    expect(a.getWant(), equals('RWS'));
+    expect(a.getGiven(), equals('RWS'));
+  });
+
+  test('isOwner() returns true if has OWNER flag', () {
+    var a = AccessMode({'mode': 'ORW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isOwner('mode'), equals(true));
+    expect(a.isOwner('given'), equals(false));
+  });
+
+  test('isPresencer() returns true if has PRES flag', () {
+    var a = AccessMode({'mode': 'PRW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isPresencer('mode'), equals(true));
+  });
+
+  test('isMuted() returns true if has no PRES flag', () {
+    var a = AccessMode({'mode': 'RW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isMuted('mode'), equals(true));
+  });
+
+  test('isJoiner() returns true if has no JOIN flag', () {
+    var a = AccessMode({'mode': 'JRW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isJoiner('mode'), equals(true));
+  });
+
+  test('isReader() returns true if has READ flag', () {
+    var a = AccessMode({'mode': 'JRW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isReader('mode'), equals(true));
+  });
+
+  test('isWriter() returns true if has WRITE flag', () {
+    var a = AccessMode({'mode': 'JRW', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isWriter('mode'), equals(true));
+  });
+
+  test('isAdmin() returns true if has OWNER and APPROVE flag', () {
+    var a = AccessMode({'mode': 'OAR', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isAdmin('mode'), equals(true));
+  });
+
+  test('isSharer() returns true if has SHARE flag', () {
+    var a = AccessMode({'mode': 'OAS', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isSharer('mode'), equals(true));
+  });
+
+  test('isDeleter() returns true if has DELETE flag', () {
+    var a = AccessMode({'mode': 'OAD', 'given': 'RWS', 'want': 'RW'});
+    expect(a.isDeleter('mode'), equals(true));
+  });
 }
