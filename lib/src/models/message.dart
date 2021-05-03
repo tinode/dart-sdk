@@ -1,11 +1,12 @@
 import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/packet.dart';
-import 'package:tinode/src/models/packet-data.dart';
-import 'package:tinode/src/models/server-messages.dart';
+
+import 'package:tinode/src/models/message-status.dart' as message_status;
+import 'package:tinode/src/models/packet-types.dart' as packet_types;
 import 'package:tinode/src/services/packet-generator.dart';
-import 'package:tinode/src/models/packet-types.dart' as PacketTypes;
-import 'package:tinode/src/models/message-status.dart' as MessageStatus;
+import 'package:tinode/src/models/server-messages.dart';
+import 'package:tinode/src/models/packet-data.dart';
+import 'package:tinode/src/models/packet.dart';
 
 class Message {
   bool echo;
@@ -22,12 +23,12 @@ class Message {
   PublishSubject<int> onStatusChange = PublishSubject<int>();
 
   Message(this.topicName, this.content, this.echo) {
-    _status = MessageStatus.NONE;
+    _status = message_status.NONE;
     _packetGenerator = GetIt.I.get<PacketGenerator>();
   }
 
   Packet asPubPacket() {
-    var packet = _packetGenerator.generate(PacketTypes.Pub, topicName);
+    var packet = _packetGenerator.generate(packet_types.Pub, topicName);
     PubPacketData data = packet.data;
     data.content = content;
     data.noecho = !echo;
@@ -59,6 +60,6 @@ class Message {
 
   void resetLocalValues() {
     ts = null;
-    setStatus(MessageStatus.NONE);
+    setStatus(message_status.NONE);
   }
 }

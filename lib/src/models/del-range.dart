@@ -3,5 +3,9 @@ class DelRange {
   int hi;
   bool all;
 
-  DelRange({this.low, this.hi, this.all});
+  DelRange({
+    this.low,
+    this.hi,
+    this.all,
+  });
 }

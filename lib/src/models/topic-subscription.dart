@@ -1,5 +1,5 @@
-import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/topic-description.dart';
+import 'package:tinode/src/models/access-mode.dart';
 
 /// Info on when the peer was last online
 class Seen {

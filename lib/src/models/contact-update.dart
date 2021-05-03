@@ -4,5 +4,8 @@ class ContactUpdateEvent {
   final TopicSubscription contact;
   final String what;
 
-  ContactUpdateEvent({this.contact, this.what});
+  ContactUpdateEvent({
+    this.contact,
+    this.what,
+  });
 }

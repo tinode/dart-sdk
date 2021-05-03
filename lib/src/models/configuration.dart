@@ -7,12 +7,13 @@ class AppSettings {
   final int expireFuturesPeriod;
   final int expireFuturesTimeout;
 
-  AppSettings(
-      {this.localSeqId,
-      this.networkUser,
-      this.networkError,
-      this.errorText,
-      this.networkUserText,
-      this.expireFuturesPeriod,
-      this.expireFuturesTimeout});
+  AppSettings({
+    this.localSeqId,
+    this.networkUser,
+    this.networkError,
+    this.errorText,
+    this.networkUserText,
+    this.expireFuturesPeriod,
+    this.expireFuturesTimeout,
+  });
 }

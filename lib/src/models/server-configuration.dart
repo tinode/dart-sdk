@@ -7,6 +7,7 @@ class ServerConfiguration {
   final int maxTagLength;
   final int minTagLength;
   final String ver;
+
   ServerConfiguration({
     this.build,
     this.maxFileUploadSize,

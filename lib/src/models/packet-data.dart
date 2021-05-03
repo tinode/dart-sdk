@@ -1,5 +1,5 @@
-import 'package:tinode/src/models/get-query.dart';
 import 'package:tinode/src/models/set-params.dart';
+import 'package:tinode/src/models/get-query.dart';
 
 abstract class PacketData {
   Map<String, dynamic> toMap();
@@ -42,7 +42,16 @@ class AccPacketData extends PacketData {
   dynamic cred;
   String token;
 
-  AccPacketData({this.user, this.scheme, this.secret, this.login, this.tags, this.desc, this.cred, this.token});
+  AccPacketData({
+    this.user,
+    this.scheme,
+    this.secret,
+    this.login,
+    this.tags,
+    this.desc,
+    this.cred,
+    this.token,
+  });
 
   @override
   Map<String, dynamic> toMap() {

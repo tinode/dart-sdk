@@ -4,7 +4,12 @@ class GetOptsType {
   String topic;
   String user;
 
-  GetOptsType({this.ims, this.limit, this.topic, this.user});
+  GetOptsType({
+    this.ims,
+    this.limit,
+    this.topic,
+    this.user,
+  });
 
   static GetOptsType fromMessage(Map<String, dynamic> msg) {
     return GetOptsType(
@@ -62,7 +67,15 @@ class GetQuery {
   GetDataType data;
   GetDataType del;
 
-  GetQuery({this.desc, this.sub, this.data, this.what, this.tags, this.cred, this.del});
+  GetQuery({
+    this.desc,
+    this.sub,
+    this.data,
+    this.what,
+    this.tags,
+    this.cred,
+    this.del,
+  });
 
   static GetQuery fromMessage(Map<String, dynamic> msg) {
     return GetQuery(

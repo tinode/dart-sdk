@@ -8,5 +8,12 @@ class AccountParams {
   Map<String, dynamic> public;
   Map<String, dynamic> private;
 
-  AccountParams({this.defacs, this.public, this.private, this.tags, this.token, this.cred});
+  AccountParams({
+    this.defacs,
+    this.public,
+    this.private,
+    this.tags,
+    this.token,
+    this.cred,
+  });
 }
