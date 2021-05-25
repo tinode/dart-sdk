@@ -179,6 +179,7 @@ class Tinode {
         Topic topic = value;
         topic.resetSubscription();
       }
+      return MapEntry(key, value);
     });
     onDisconnect.add(null);
   }

@@ -1,5 +1,5 @@
-import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
+import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/topic.dart';
 
 /// This is a data structure for user's data in cache
@@ -28,7 +28,7 @@ class CacheManager {
   }
 
   /// Get a specific data from cache using type and name
-  get(String type, String name) {
+  dynamic get(String type, String name) {
     return _cache[type + ':' + name];
   }
 

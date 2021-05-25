@@ -169,6 +169,11 @@ class Topic {
     return _subscribed;
   }
 
+  // To set _subscribed manually, Used in unit tests
+  set isSubscribed(value) {
+    _subscribed = value;
+  }
+
   Future<CtrlMessage> subscribe(GetQuery getParams, SetParams setParams) async {
     // If the topic is already subscribed, return resolved promise
     if (isSubscribed) {
