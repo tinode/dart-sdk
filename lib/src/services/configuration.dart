@@ -45,7 +45,7 @@ class ConfigService {
     if (Platform.isAndroid) {
       return 'Android';
     } else if (Platform.isFuchsia) {
-      return 'isFuchsia';
+      return 'Fuchsia';
     } else if (Platform.isIOS) {
       return 'IOS';
     } else if (Platform.isLinux) {

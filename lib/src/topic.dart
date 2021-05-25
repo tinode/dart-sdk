@@ -1,3 +1,9 @@
+import 'package:rxdart/rxdart.dart';
+import 'package:get_it/get_it.dart';
+
+import 'dart:async';
+import 'dart:math';
+
 import 'package:tinode/src/models/message-status.dart' as message_status;
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/delete-transaction.dart';
@@ -22,14 +28,6 @@ import 'package:tinode/src/models/values.dart';
 import 'package:tinode/src/services/auth.dart';
 import 'package:tinode/src/sorted-cache.dart';
 import 'package:tinode/src/topic-me.dart';
-
-import 'package:rxdart/rxdart.dart';
-import 'package:get_it/get_it.dart';
-
-import 'dart:async';
-import 'dart:math';
-
-import 'models/message.dart';
 
 class Topic {
   /// This topic's name

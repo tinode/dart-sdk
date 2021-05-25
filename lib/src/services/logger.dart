@@ -1,5 +1,5 @@
-import 'package:get_it/get_it.dart';
 import 'package:tinode/src/services/configuration.dart';
+import 'package:get_it/get_it.dart';
 
 class LoggerService {
   ConfigService _configService;

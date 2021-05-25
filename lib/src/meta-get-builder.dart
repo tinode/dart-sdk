@@ -1,3 +1,5 @@
+import 'package:get_it/get_it.dart';
+
 import 'package:tinode/src/models/topic-names.dart' as topic_names;
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/models/get-query.dart';
@@ -5,7 +7,6 @@ import 'package:tinode/src/services/logger.dart';
 import 'package:tinode/src/services/tinode.dart';
 import 'package:tinode/src/topic-me.dart';
 import 'package:tinode/src/topic.dart';
-import 'package:get_it/get_it.dart';
 
 class MetaGetBuilder {
   /// Tinode service, responsible for handling messages, preparing packets and sending them
