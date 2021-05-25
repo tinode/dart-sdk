@@ -12,7 +12,6 @@ import 'package:tinode/src/models/topic-description.dart';
 import 'package:tinode/src/services/cache-manager.dart';
 import 'package:tinode/src/models/server-messages.dart';
 import 'package:tinode/src/services/configuration.dart';
-import 'package:tinode/src/models/configuration.dart';
 import 'package:tinode/src/models/access-mode.dart';
 import 'package:tinode/src/models/credential.dart';
 import 'package:tinode/src/models/set-params.dart';
@@ -55,9 +54,6 @@ class Topic {
   ///
   /// Subscribed users, for tracking read/recv/msg notifications
   final Map<String, TopicSubscription> _users = {};
-
-  /// Current value of locally issued seqId, used for pending messages
-  final int _queuedSeqId = AppSettings().localSeqId;
 
   /// The maximum known {data.seq} value
   int _maxSeq = 0;
