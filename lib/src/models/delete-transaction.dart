@@ -1,6 +1,6 @@
 class DeleteTransactionRange {
-  final int hi;
-  final int low;
+  final int? hi;
+  final int? low;
 
   DeleteTransactionRange({this.hi, this.low});
 
@@ -14,10 +14,10 @@ class DeleteTransactionRange {
 
 class DeleteTransaction {
   /// Id of the latest applicable 'delete' transaction
-  final int clear;
+  final int? clear;
 
   /// Ranges of Ids of deleted messages
-  final List<DeleteTransactionRange> delseq;
+  final List<DeleteTransactionRange>? delseq;
 
   DeleteTransaction({this.clear, this.delseq});
 

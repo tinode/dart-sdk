@@ -7,13 +7,13 @@ import 'package:tinode/src/services/tools.dart';
 import 'package:tinode/src/models/packet.dart';
 
 class PacketGenerator {
-  ConfigService _configService;
+  late ConfigService _configService;
 
   PacketGenerator() {
     _configService = GetIt.I.get<ConfigService>();
   }
 
-  Packet generate(String type, String topicName) {
+  Packet generate(String type, String? topicName) {
     PacketData packetData;
     switch (type) {
       case packet_types.Hi:
@@ -111,6 +111,8 @@ class PacketGenerator {
           what: null,
         );
         break;
+      default:
+        packetData = null as dynamic;
     }
 
     return Packet(type, packetData, Tools.getNextUniqueId());

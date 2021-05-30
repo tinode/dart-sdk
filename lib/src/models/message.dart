@@ -10,15 +10,15 @@ import 'package:tinode/src/models/packet.dart';
 
 class Message {
   bool echo;
-  int _status;
-  DateTime ts;
-  String from;
-  bool cancelled;
-  dynamic content;
-  String topicName;
-  bool noForwarding;
+  int? _status;
+  DateTime? ts;
+  String? from;
+  bool? cancelled;
+  dynamic? content;
+  String? topicName;
+  bool? noForwarding;
 
-  PacketGenerator _packetGenerator;
+  late PacketGenerator _packetGenerator;
 
   PublishSubject<int> onStatusChange = PublishSubject<int>();
 
@@ -29,7 +29,7 @@ class Message {
 
   Packet asPubPacket() {
     var packet = _packetGenerator.generate(packet_types.Pub, topicName);
-    PubPacketData data = packet.data;
+    var data = packet.data as PubPacketData;
     data.content = content;
     data.noecho = !echo;
     packet.data = data;
@@ -54,7 +54,7 @@ class Message {
     onStatusChange.add(status);
   }
 
-  int getStatus() {
+  int? getStatus() {
     return _status;
   }
 

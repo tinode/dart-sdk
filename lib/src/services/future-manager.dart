@@ -7,9 +7,9 @@ import 'package:tinode/src/services/logger.dart';
 
 class FutureManager {
   final Map<String, FeatureCallback> _pendingFutures = {};
-  Timer _expiredFuturesCheckerTimer;
-  ConfigService _configService;
-  LoggerService _loggerService;
+  Timer? _expiredFuturesCheckerTimer;
+  late ConfigService _configService;
+  late LoggerService _loggerService;
 
   FutureManager() {
     _configService = GetIt.I.get<ConfigService>();
@@ -24,54 +24,53 @@ class FutureManager {
     return completer.future;
   }
 
-  void execFuture(String id, int code, dynamic onOK, String errorText) {
+  void execFuture(String? id, int? code, dynamic onOK, String? errorText) {
     var callbacks = _pendingFutures[id];
 
     if (callbacks != null) {
       _pendingFutures.remove(id);
-      if (code >= 200 && code < 400) {
-        callbacks.completer.complete(onOK);
+      if (code != null && code >= 200 && code < 400) {
+        callbacks.completer?.complete(onOK);
       } else {
-        callbacks.completer.completeError(Exception(errorText + ' (' + code.toString() + ')'));
+        callbacks.completer?.completeError(Exception((errorText ?? '') + ' (' + code.toString() + ')'));
       }
     }
   }
 
   void checkExpiredFutures() {
     var exception = Exception('Timeout (504)');
-    var expires = DateTime.now().subtract(Duration(milliseconds: _configService.appSettings.expireFuturesTimeout));
+    var expires = DateTime.now().subtract(Duration(milliseconds: (_configService.appSettings.expireFuturesTimeout ?? 0)));
 
+    var markForRemoval = <String>[];
     _pendingFutures.forEach((String key, FeatureCallback featureCB) {
-      if (key != null) {
-        if (featureCB.ts.isBefore(expires)) {
-          _loggerService.error('Promise expired ' + key.toString());
-          featureCB.completer.completeError(exception);
-          _pendingFutures.remove(key);
-        }
+      if (featureCB.ts!.isBefore(expires)) {
+        _loggerService.error('Promise expired ' + key.toString());
+        featureCB.completer?.completeError(exception);
+        markForRemoval.add(key);
       }
     });
+
+    _pendingFutures.removeWhere((key, value) => markForRemoval.contains(key));
   }
 
   void startCheckingExpiredFutures() {
-    if (_expiredFuturesCheckerTimer != null && _expiredFuturesCheckerTimer.isActive) {
+    if (_expiredFuturesCheckerTimer != null && _expiredFuturesCheckerTimer!.isActive) {
       return;
     }
-    _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: _configService.appSettings.expireFuturesPeriod), (_) {
+    _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: (_configService.appSettings.expireFuturesPeriod ?? 0)), (_) {
       checkExpiredFutures();
     });
   }
 
   void rejectAllFutures(int code, String reason) {
     _pendingFutures.forEach((String key, FeatureCallback cb) {
-      if (cb != null) {
-        cb.completer.completeError(reason);
-      }
+      cb.completer?.completeError(reason);
     });
   }
 
   void stopCheckingExpiredFutures() {
     if (_expiredFuturesCheckerTimer != null) {
-      _expiredFuturesCheckerTimer.cancel();
+      _expiredFuturesCheckerTimer?.cancel();
       _expiredFuturesCheckerTimer = null;
     }
   }

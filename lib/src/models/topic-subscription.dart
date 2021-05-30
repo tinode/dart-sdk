@@ -4,10 +4,10 @@ import 'package:tinode/src/models/access-mode.dart';
 /// Info on when the peer was last online
 class Seen {
   /// Timestamp
-  DateTime when;
+  DateTime? when;
 
   /// User agent of peer's client
-  final String ua;
+  final String? ua;
 
   Seen({this.when, this.ua});
 
@@ -22,30 +22,30 @@ class Seen {
 /// Topic subscriber
 class TopicSubscription {
   /// Id of the user this subscription
-  String user;
+  String? user;
 
   /// Timestamp of the last change in the subscription, present only for
   /// requester's own subscriptions
-  DateTime updated;
+  DateTime? updated;
 
   /// Timestamp of the last message in the topic (may also include
   /// other events in the future, such as new subscribers)
-  DateTime touched;
+  DateTime? touched;
 
-  DateTime deleted;
-  DateTime created;
+  DateTime? deleted;
+  DateTime? created;
 
   /// User's access permissions
-  AccessMode acs;
+  AccessMode? acs;
 
   /// Id of the message user claims through {note} message
-  int read;
+  int? read;
 
   /// Like 'read', but received, optional
-  int recv;
+  int? recv;
 
   /// In case some messages were deleted, the greatest Id of a deleted message, optional
-  int clear;
+  int? clear;
 
   /// Application-defined user's 'public' object, absent when querying P2P topics
   dynamic public;
@@ -61,28 +61,28 @@ class TopicSubscription {
   /// online, not necessarily attached to topic; a group topic
   /// is considered online if it has at least one active
   /// subscriber.
-  bool online;
+  bool? online;
 
   /// Topic this subscription describes
   ///
   /// can be used only when querying 'me' topic
-  String topic;
+  String? topic;
 
   /// Server-issued id of the last {data} message
   ///
   /// can be used only when querying 'me' topic
-  int seq;
+  int? seq;
 
   /// If this is a P2P topic, info on when the peer was last online
   ///
   /// can be used only when querying 'me' topic
-  Seen seen;
+  Seen? seen;
 
-  bool noForwarding = false;
+  bool? noForwarding = false;
 
-  String mode;
+  String? mode;
 
-  int unread;
+  int? unread;
 
   TopicSubscription({
     this.user,

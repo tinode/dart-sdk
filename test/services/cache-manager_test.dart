@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:test/test.dart';
 
+import 'package:tinode/src/models/connection-options.dart';
 import 'package:tinode/src/models/topic-subscription.dart';
 import 'package:tinode/src/services/packet-generator.dart';
 import 'package:tinode/src/services/future-manager.dart';
@@ -16,7 +17,7 @@ void main() {
   GetIt.I.registerSingleton<ConfigService>(ConfigService(false));
   GetIt.I.registerSingleton<LoggerService>(LoggerService());
   GetIt.I.registerSingleton<AuthService>(AuthService());
-  GetIt.I.registerSingleton<ConnectionService>(ConnectionService(null));
+  GetIt.I.registerSingleton<ConnectionService>(ConnectionService(ConnectionOptions()));
   GetIt.I.registerSingleton<FutureManager>(FutureManager());
   GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
   GetIt.I.registerSingleton<CacheManager>(CacheManager());
@@ -36,12 +37,12 @@ void main() {
 
   test('getUser() should return user type data from cache', () {
     service.putUser('test', TopicSubscription(online: true));
-    expect(service.getUser('test').online, true);
+    expect(service.getUser('test')?.online, true);
   });
 
   test('deleteUser() should delete user type data from cache', () {
     service.putUser('test', TopicSubscription(online: true));
-    expect(service.getUser('test').online, true);
+    expect(service.getUser('test')?.online, true);
     service.deleteUser('test');
     expect(service.getUser('test'), null);
   });

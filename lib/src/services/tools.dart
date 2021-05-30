@@ -12,8 +12,8 @@ var messageId = Random().nextInt(0xFFFF) + 0xFFFF;
 class Tools {
   /// Create base URL based on connection options
   static String makeBaseURL(ConnectionOptions config) {
-    var url = config.secure ? 'wss://' : 'ws://';
-    return url + config.host + '/v0/channels?apikey=' + config.apiKey;
+    var url = (config.secure ?? false) ? 'wss://' : 'ws://';
+    return url + (config.host ?? '') + '/v0/channels?apikey=' + (config.apiKey ?? '');
   }
 
   /// Get next message Id
@@ -34,7 +34,7 @@ class Tools {
   }
 
   /// Returns the type of topic based on topic name
-  static String topicType(String topicName) {
+  static String? topicType(String topicName) {
     if (topicName.runtimeType != String) {
       return 'xxx';
     }

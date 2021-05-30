@@ -3,9 +3,9 @@ import 'package:tinode/src/models/auth-token.dart';
 import 'package:tinode/src/models/server-messages.dart';
 
 class AuthService {
-  String _userId;
-  String _lastLogin;
-  AuthToken _authToken;
+  String? _userId;
+  String? _lastLogin;
+  AuthToken? _authToken;
   bool _authenticated = false;
 
   PublishSubject<OnLoginData> onLogin = PublishSubject<OnLoginData>();
@@ -14,15 +14,15 @@ class AuthService {
     return _authenticated;
   }
 
-  AuthToken get authToken {
+  AuthToken? get authToken {
     return _authToken;
   }
 
-  String get userId {
+  String? get userId {
     return _userId;
   }
 
-  String get lastLogin {
+  String? get lastLogin {
     return _lastLogin;
   }
 
@@ -34,18 +34,22 @@ class AuthService {
     _authToken = authToken;
   }
 
-  void setUserId(String userId) {
+  void setUserId(String? userId) {
     _userId = userId;
   }
 
-  void onLoginSuccessful(CtrlMessage ctrl) {
+  void onLoginSuccessful(CtrlMessage? ctrl) {
+    if (ctrl == null) {
+      return;
+    }
+
     var params = ctrl.params;
     if (params == null || params['user'] == null) {
       return;
     }
 
     _userId = params['user'];
-    _authenticated = ctrl.code >= 200 && ctrl.code < 300;
+    _authenticated = (ctrl.code ?? 0) >= 200 && (ctrl.code ?? 0) < 300;
 
     if (params['token'] != null && params['expires'] != null) {
       _authToken = AuthToken(token: params['token'], expires: DateTime.parse(params['expires']));

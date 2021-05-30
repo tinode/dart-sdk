@@ -1,10 +1,10 @@
 /// Topic's default access permissions
 class DefAcs {
   /// Default access for authenticated users
-  String auth;
+  String? auth;
 
   /// Default access for anonymous users
-  String anon;
+  String? anon;
 
   DefAcs({this.auth, this.anon});
 

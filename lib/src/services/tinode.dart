@@ -29,25 +29,25 @@ import 'package:tinode/src/topic.dart';
 /// This class contains basic functionality and logic to generate and send tinode packages
 class TinodeService {
   /// Connection service, responsible for establishing a websocket connection to the server
-  ConnectionService _connectionService;
+  late ConnectionService _connectionService;
 
   /// Packet generator service is responsible for initialize packet objects based on type
-  PacketGenerator _packetGenerator;
+  late PacketGenerator _packetGenerator;
 
   /// Future manager, responsible for making futures and executing them
-  FutureManager _futureManager;
+  late FutureManager _futureManager;
 
   /// Logger service, responsible for logging content in different levels
-  LoggerService _loggerService;
+  late LoggerService _loggerService;
 
   /// Configuration service, responsible for storing library config and information
-  ConfigService _configService;
+  late ConfigService _configService;
 
   /// Cache manager service, responsible for read and write operations on cached data
-  CacheManager _cacheManager;
+  late CacheManager _cacheManager;
 
   /// Authentication service, responsible for managing credentials and user id
-  AuthService _authService;
+  late AuthService _authService;
 
   /// This event will be triggered when a `ctrl` message is received
   PublishSubject<CtrlMessage> onCtrlMessage = PublishSubject<CtrlMessage>();
@@ -76,7 +76,11 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `ctrl`
-  void handleCtrlMessage(CtrlMessage ctrl) {
+  void handleCtrlMessage(CtrlMessage? ctrl) {
+    if (ctrl == null) {
+      return;
+    }
+
     onCtrlMessage.add(ctrl);
 
     if (ctrl.id != null && ctrl.id != '') {
@@ -84,21 +88,21 @@ class TinodeService {
     }
 
     if (ctrl.code == 205 && ctrl.text == 'evicted') {
-      Topic topic = _cacheManager.get('topic', ctrl.topic);
+      Topic? topic = _cacheManager.get('topic', ctrl.topic ?? '');
       if (topic != null) {
         topic.resetSubscription();
       }
     }
 
     if (ctrl.params != null && ctrl.params['what'] == 'data') {
-      Topic topic = _cacheManager.get('topic', ctrl.topic);
+      Topic? topic = _cacheManager.get('topic', ctrl.topic ?? '');
       if (topic != null) {
         topic.allMessagesReceived(ctrl.params['count']);
       }
     }
 
     if (ctrl.params != null && ctrl.params['what'] == 'sub') {
-      Topic topic = _cacheManager.get('topic', ctrl.topic);
+      Topic? topic = _cacheManager.get('topic', ctrl.topic ?? '');
       if (topic != null) {
         topic.processMetaSub([]);
       }
@@ -106,10 +110,14 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `meta`
-  void handleMetaMessage(MetaMessage meta) {
+  void handleMetaMessage(MetaMessage? meta) {
+    if (meta == null) {
+      return;
+    }
+
     onMetaMessage.add(meta);
 
-    Topic topic = _cacheManager.get('topic', meta.topic);
+    Topic? topic = _cacheManager.get('topic', meta.topic ?? '');
     if (topic != null) {
       topic.routeMeta(meta);
     }
@@ -120,28 +128,40 @@ class TinodeService {
   }
 
   /// Process a packet if the packet type is `data`
-  void handleDataMessage(DataMessage data) {
+  void handleDataMessage(DataMessage? data) {
+    if (data == null) {
+      return;
+    }
+
     onDataMessage.add(data);
 
-    Topic topic = _cacheManager.get('topic', data.topic);
+    Topic? topic = _cacheManager.get('topic', data.topic ?? '');
     if (topic != null) {
       topic.routeData(data);
     }
   }
 
   /// Process a packet if the packet type is `pres`
-  void handlePresMessage(PresMessage pres) {
+  void handlePresMessage(PresMessage? pres) {
+    if (pres == null) {
+      return;
+    }
+
     onPresMessage.add(pres);
 
-    Topic topic = pres.topic != null ? _cacheManager.get('topic', pres.topic) : null;
+    Topic? topic = pres.topic != null ? _cacheManager.get('topic', pres.topic ?? '') : null;
     if (topic != null) {
       topic.routePres(pres);
     }
   }
 
   /// Process a packet if the packet type is `info`
-  void handleInfoMessage(InfoMessage info) {
-    Topic topic = _cacheManager.get('topic', info.topic);
+  void handleInfoMessage(InfoMessage? info) {
+    if (info == null) {
+      return;
+    }
+
+    Topic? topic = _cacheManager.get('topic', info.topic ?? '');
     if (topic != null) {
       topic.routeInfo(info);
     }
@@ -149,10 +169,10 @@ class TinodeService {
 
   /// Sends a packet using connection service
   Future<dynamic> _send(Packet pkt) {
-    Future future;
+    var future = Future<dynamic>.value(null);
 
     if (pkt.id != null) {
-      future = _futureManager.makeFuture(pkt.id);
+      future = _futureManager.makeFuture(pkt.id ?? '');
     }
     var formattedPkt = pkt.toMap();
     formattedPkt['id'] = pkt.id;
@@ -167,17 +187,18 @@ class TinodeService {
       _loggerService.log('out: ' + json);
     } catch (e) {
       if (pkt.id != null) {
-        _loggerService.error(e);
+        _loggerService.error(e.toString());
         _futureManager.execFuture(pkt.id, _configService.appSettings.networkError, null, 'Error');
       } else {
         rethrow;
       }
     }
+
     return future;
   }
 
   /// Say hello and set some initial configuration
-  Future hello({String deviceToken}) {
+  Future hello({String? deviceToken}) {
     if (deviceToken != null) {
       _configService.deviceToken = deviceToken;
     }
@@ -186,9 +207,9 @@ class TinodeService {
   }
 
   /// Create or update an account
-  Future account(String userId, String scheme, String secret, bool login, AccountParams params) {
-    var packet = _packetGenerator.generate(packet_types.Acc, null);
-    AccPacketData data = packet.data;
+  Future account(String userId, String scheme, String secret, bool login, AccountParams? params) {
+    Packet? packet = _packetGenerator.generate(packet_types.Acc, null);
+    var data = packet.data as AccPacketData;
     data.user = userId;
     data.login = login;
     data.scheme = scheme;
@@ -200,18 +221,18 @@ class TinodeService {
       data.token = params.token;
 
       data.desc = {};
-      data.desc['defacs'] = params.defacs;
-      data.desc['public'] = params.public;
-      data.desc['private'] = params.private;
+      data.desc!['defacs'] = params.defacs;
+      data.desc!['public'] = params.public;
+      data.desc!['private'] = params.private;
     }
     packet.data = data;
     return _send(packet);
   }
 
   /// Authenticate current session
-  Future login(String scheme, String secret, Map<String, dynamic> cred) async {
+  Future login(String scheme, String secret, Map<String, dynamic>? cred) async {
     var packet = _packetGenerator.generate(packet_types.Login, null);
-    LoginPacketData data = packet.data;
+    var data = packet.data as LoginPacketData;
     data.scheme = scheme;
     data.secret = secret;
     data.cred = cred;
@@ -224,9 +245,9 @@ class TinodeService {
   }
 
   /// Send a topic subscription request
-  Future subscribe(String topicName, GetQuery getParams, SetParams setParams) {
+  Future subscribe(String? topicName, GetQuery getParams, SetParams? setParams) {
     var packet = _packetGenerator.generate(packet_types.Sub, topicName);
-    SubPacketData data = packet.data;
+    var data = packet.data as SubPacketData;
 
     if (topicName == '' || topicName == null) {
       topicName = topic_names.TOPIC_NEW;
@@ -236,21 +257,21 @@ class TinodeService {
 
     if (setParams != null) {
       if (setParams.sub != null) {
-        data.set.sub = setParams.sub;
+        data.set?.sub = setParams.sub;
       }
 
       if (setParams.desc != null) {
         if (Tools.isNewGroupTopicName(topicName)) {
           // Full set.desc params are used for new topics only
-          data.set.desc = setParams.desc;
-        } else if (Tools.isP2PTopicName(topicName) && setParams.desc.defacs != null) {
+          data.set?.desc = setParams.desc;
+        } else if (Tools.isP2PTopicName(topicName) && setParams.desc?.defacs != null) {
           // Use optional default permissions only.
-          data.set.desc = TopicDescription(defacs: setParams.desc.defacs);
+          data.set?.desc = TopicDescription(defacs: setParams.desc?.defacs);
         }
       }
 
       if (setParams.tags != null) {
-        data.set.tags = setParams.tags;
+        data.set?.tags = setParams.tags;
       }
     }
 
@@ -261,14 +282,14 @@ class TinodeService {
   /// Detach and optionally unsubscribe from the topic
   Future leave(String topicName, bool unsubscribe) {
     var packet = _packetGenerator.generate(packet_types.Leave, topicName);
-    LeavePacketData data = packet.data;
+    var data = packet.data as LeavePacketData;
     data.unsub = unsubscribe;
     packet.data = data;
     return _send(packet);
   }
 
-  Topic getTopic(String topicName) {
-    Topic topic = _cacheManager.get('topic', topicName);
+  Topic? getTopic(String? topicName) {
+    Topic? topic = _cacheManager.get('topic', topicName ?? '');
     if (topic == null && topicName != null) {
       if (topicName == topic_names.TOPIC_ME) {
         topic = TopicMe();
@@ -299,7 +320,7 @@ class TinodeService {
   }
 
   /// Create message draft without sending it to the server
-  Message createMessage(String topicName, dynamic data, bool echo) {
+  Message createMessage(String topicName, dynamic data, bool? echo) {
     echo ??= true;
     return Message(topicName, data, echo);
   }
@@ -313,12 +334,12 @@ class TinodeService {
   /// Request topic metadata
   Future getMeta(String topicName, GetQuery params) {
     var packet = _packetGenerator.generate(packet_types.Get, topicName);
-    GetPacketData data = packet.data;
+    var data = packet.data as GetPacketData;
 
-    data.data = params.data.toMap();
-    data.desc = params.desc.toMap();
+    data.data = params.data?.toMap();
+    data.desc = params.desc?.toMap();
     data.what = params.what;
-    data.sub = params.sub.toMap();
+    data.sub = params.sub?.toMap();
 
     packet.data = data;
     return _send(packet);
@@ -327,7 +348,7 @@ class TinodeService {
   /// Update topic's metadata: description, subscriptions
   Future setMeta(String topicName, SetParams params) {
     var packet = _packetGenerator.generate(packet_types.Set, topicName);
-    SetPacketData data = packet.data;
+    var data = packet.data as SetPacketData;
 
     var what = [];
     if (params != null) {
@@ -359,7 +380,7 @@ class TinodeService {
   /// Delete some or all messages in a topic
   Future deleteMessages(String topicName, List<DelRange> ranges, bool hard) {
     var packet = _packetGenerator.generate(packet_types.Del, topicName);
-    DelPacketData data = packet.data;
+    var data = packet.data as DelPacketData;
     data.what = 'msg';
     data.delseq = ranges;
     data.hard = hard;
@@ -370,7 +391,7 @@ class TinodeService {
   /// Delete the topic all together. Requires Owner permission
   Future deleteTopic(String topicName, bool hard) async {
     var packet = _packetGenerator.generate(packet_types.Del, topicName);
-    DelPacketData data = packet.data;
+    var data = packet.data as DelPacketData;
     data.what = 'topic';
     data.hard = hard;
     packet.data = data;
@@ -382,7 +403,7 @@ class TinodeService {
   /// Delete subscription. Requires Share permission
   Future deleteSubscription(String topicName, String userId) {
     var packet = _packetGenerator.generate(packet_types.Del, topicName);
-    DelPacketData data = packet.data;
+    var data = packet.data as DelPacketData;
     data.what = 'sub';
     data.user = userId;
     packet.data = data;
@@ -392,7 +413,7 @@ class TinodeService {
   /// Delete credential. Always sent on 'me' topic
   Future deleteCredential(String method, String value) {
     var packet = _packetGenerator.generate(packet_types.Del, topic_names.TOPIC_ME);
-    DelPacketData data = packet.data;
+    var data = packet.data as DelPacketData;
     data.what = 'cred';
     data.cred = {'meth': method, 'val': value};
     packet.data = data;
@@ -402,7 +423,7 @@ class TinodeService {
   /// Request to delete account of the current user
   Future deleteCurrentUser(bool hard) {
     var packet = _packetGenerator.generate(packet_types.Del, null);
-    DelPacketData data = packet.data;
+    var data = packet.data as DelPacketData;
     data.hard = hard;
     data.what = 'user';
     packet.data = data;
@@ -411,12 +432,12 @@ class TinodeService {
 
   /// Notify server that a message or messages were read or received. Does NOT return promise
   Future note(String topicName, String what, int seq) {
-    if (seq <= 0 || seq >= _configService.appSettings.localSeqId) {
+    if (seq <= 0 || seq >= (_configService.appSettings.localSeqId ?? 0)) {
       throw Exception('Invalid message id ' + seq.toString());
     }
 
     var packet = _packetGenerator.generate(packet_types.Note, topicName);
-    NotePacketData data = packet.data;
+    var data = packet.data as NotePacketData;
     data.what = what;
     data.seq = seq;
     packet.data = data;
@@ -426,7 +447,7 @@ class TinodeService {
   /// Broadcast a key-press notification to topic subscribers
   Future noteKeyPress(String topicName) {
     var packet = _packetGenerator.generate(packet_types.Note, topicName);
-    NotePacketData data = packet.data;
+    var data = packet.data as NotePacketData;
     data.what = 'kp';
     packet.data = data;
     return _send(packet);

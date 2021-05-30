@@ -1,14 +1,14 @@
 import 'package:tinode/src/models/packet-data.dart';
 
 class Packet {
-  String id;
-  String name;
-  PacketData data;
+  String? id;
+  String? name;
+  PacketData? data;
 
-  bool failed;
-  bool sending;
-  bool cancelled;
-  bool noForwarding;
+  bool? failed;
+  bool? sending;
+  bool? cancelled;
+  bool? noForwarding;
 
   Packet(String name, PacketData data, String id) {
     this.name = name;
@@ -20,6 +20,6 @@ class Packet {
   }
 
   Map<String, dynamic> toMap() {
-    return data.toMap();
+    return data?.toMap() ?? {};
   }
 }

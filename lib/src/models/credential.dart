@@ -1,19 +1,19 @@
 /// A data structure representing a credential
 class Credential {
   /// Validation method
-  final String meth;
+  final String? meth;
 
   /// Validation value (e.g. email or phone number)
-  final String val;
+  final String? val;
 
   /// Validation response
-  final String resp;
+  final String? resp;
 
   /// Check if validation done
-  bool done;
+  bool? done;
 
   /// Validation parameters
-  final Map<String, dynamic> params;
+  final Map<String, dynamic>? params;
 
   // Create a new instance of Credential
   Credential({this.meth, this.val, this.resp, this.params, this.done});

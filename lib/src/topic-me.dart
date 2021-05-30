@@ -32,13 +32,13 @@ class TopicMe extends Topic {
   List<Credential> _credentials = [];
 
   /// Tinode service, responsible for handling messages, preparing packets and sending them
-  TinodeService _tinodeService;
+  late TinodeService _tinodeService;
 
   /// Cache manager service, responsible for read and write operations on cached data
-  CacheManager _cacheManager;
+  late CacheManager _cacheManager;
 
   /// Logger service, responsible for logging content in different levels
-  LoggerService _loggerService;
+  late LoggerService _loggerService;
 
   TopicMe() : super(topic_names.TOPIC_ME) {
     _cacheManager = GetIt.I.get<CacheManager>();
@@ -50,7 +50,7 @@ class TopicMe extends Topic {
   @override
   void processMetaDesc(TopicDescription desc) {
     // Check if online contacts need to be turned off because P permission was removed.
-    var turnOff = (desc.acs != null && !desc.acs.isPresencer(null)) && (acs != null && acs.isPresencer(null));
+    var turnOff = (desc.acs != null && !desc.acs!.isPresencer(null)) && acs.isPresencer(null);
 
     // Copy parameters from desc object to this topic
     acs = desc.acs ?? acs;
@@ -68,10 +68,10 @@ class TopicMe extends Topic {
 
     if (turnOff) {
       _contacts.forEach((key, cont) {
-        if (cont.online) {
+        if (cont.online == true) {
           cont.online = false;
           if (cont.seen != null) {
-            cont.seen.when = DateTime.now();
+            cont.seen!.when = DateTime.now();
           } else {
             cont.seen = Seen(when: DateTime.now());
           }
@@ -93,17 +93,17 @@ class TopicMe extends Topic {
         continue;
       }
 
-      TopicSubscription cont;
+      var cont = TopicSubscription();
       if (sub.deleted != null) {
         _contacts.remove(topicName);
-        _cacheManager.delete('topic', topicName);
+        _cacheManager.delete('topic', topicName ?? '');
       } else {
         // Ensure the values are defined and are integers.
         if (sub.seq != null) {
           sub.seq = sub.seq ?? 0;
           sub.recv = sub.recv ?? 0;
           sub.read = sub.read ?? 0;
-          sub.unread = sub.seq - sub.read;
+          sub.unread = (sub.seq ?? 0) - (sub.read ?? 0);
         }
 
         var cached = _contacts[topicName];
@@ -113,7 +113,7 @@ class TopicMe extends Topic {
           cached.created = sub.created ?? cached.created;
           cached.deleted = cached.deleted ?? cached.deleted;
           cached.mode = sub.mode ?? cached.mode;
-          cached.noForwarding = sub.mode ?? cached.noForwarding;
+          cached.noForwarding = sub.noForwarding ?? cached.noForwarding;
           cached.online = sub.online ?? cached.online;
           cached.private = sub.private ?? cached.private;
           cached.public = sub.public ?? cached.public;
@@ -127,16 +127,18 @@ class TopicMe extends Topic {
           cached.user = sub.user ?? cached.user;
         } else {
           cached = sub;
-          _contacts[topicName] = sub;
+          _contacts[(topicName ?? '')] = sub;
         }
         cont = cached;
 
-        if (Tools.isP2PTopicName(topicName)) {
-          _cacheManager.putUser(topicName, cont);
+        if (topicName != null) {
+          if (Tools.isP2PTopicName(topicName)) {
+            _cacheManager.putUser(topicName, cont);
+          }
         }
 
         // Notify topic of the update if it's an external update.
-        if (!sub.noForwarding) {
+        if (sub.noForwarding == false || sub.noForwarding == null) {
           var topic = _tinodeService.getTopic(topicName);
           if (topic != null) {
             sub.noForwarding = true;
@@ -169,10 +171,10 @@ class TopicMe extends Topic {
         if (cr.val != null) {
           if (idx < 0) {
             // Not found.
-            if (!cr.done) {
+            if (cr.done == false || cr.done == null) {
               // Unconfirmed credential replaces previous unconfirmed credential of the same method.
               idx = _credentials.indexWhere((el) {
-                return el.meth == cr.meth && !el.done;
+                return el.meth == cr.meth && (el.done == false || cr.done == null);
               });
               if (idx >= 0) {
                 // Remove previous unconfirmed credential.
@@ -187,7 +189,7 @@ class TopicMe extends Topic {
         } else if (cr.resp != null) {
           // Handle credential confirmation.
           idx = _credentials.indexWhere((el) {
-            return el.meth == cr.meth && !el.done;
+            return el.meth == cr.meth && (el.done == false || cr.done == null);
           });
 
           if (idx >= 0) {
@@ -226,10 +228,10 @@ class TopicMe extends Topic {
           break;
         case 'off':
           // topic went offline
-          if (cont.online) {
+          if (cont.online == true) {
             cont.online = false;
             if (cont.seen != null) {
-              cont.seen.when = DateTime.now();
+              cont.seen?.when = DateTime.now();
             } else {
               cont.seen = Seen(when: DateTime.now());
             }
@@ -238,13 +240,13 @@ class TopicMe extends Topic {
         case 'msg':
           // new message received
           cont.touched = DateTime.now();
-          cont.seq = pres.seq | 0;
+          cont.seq = (pres.seq ?? 0) | 0;
           // Check if message is sent by the current user. If so it's been read already.
-          if (pres.act == null || _tinodeService.isMe(pres.act)) {
-            cont.read = cont.read != null && cont.read != 0 ? max(cont.read, cont.seq) : cont.seq;
-            cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.read, cont.recv) : cont.read;
+          if (pres.act == null || _tinodeService.isMe(pres.act ?? '')) {
+            cont.read = cont.read != null && cont.read != 0 ? max((cont.read ?? 0), (cont.seq ?? 0)) : cont.seq;
+            cont.recv = cont.recv != null && cont.recv != 0 ? max((cont.read ?? 0), (cont.recv ?? 0)) : cont.read;
           }
-          cont.unread = cont.seq - (cont.read | 0);
+          cont.unread = (cont.seq ?? 0) - ((cont.read ?? 0) | 0);
           break;
         case 'upd': // desc updated
           // Request updated subscription.
@@ -253,7 +255,7 @@ class TopicMe extends Topic {
         case 'acs':
           // access mode changed
           if (cont.acs != null) {
-            cont.acs.updateAll(pres.dacs);
+            cont.acs?.updateAll(pres.dacs);
           } else {
             cont.acs = AccessMode(null).updateAll(pres.dacs);
           }
@@ -264,26 +266,26 @@ class TopicMe extends Topic {
           cont.seen = Seen(when: DateTime.now(), ua: pres.ua);
           break;
         case 'recv': // user's other session marked some messages as received
-          pres.seq = pres.seq | 0;
-          cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.recv, pres.seq) : pres.seq;
+          pres.seq = (pres.seq ?? 0) | 0;
+          cont.recv = cont.recv != null && cont.recv != 0 ? max((cont.recv ?? 0), (pres.seq ?? 0)) : pres.seq;
           break;
         case 'read':
           // user's other session marked some messages as read
-          pres.seq = pres.seq | 0;
-          cont.read = cont.read != null && cont.read != 0 ? max(cont.read, pres.seq) : pres.seq;
-          cont.recv = cont.recv != null && cont.recv != 0 ? max(cont.read, cont.recv) : cont.recv;
-          cont.unread = cont.seq - cont.read;
+          pres.seq = (pres.seq ?? 0) | 0;
+          cont.read = cont.read != null && cont.read != 0 ? max((cont.read ?? 0), (pres.seq ?? 0)) : pres.seq;
+          cont.recv = cont.recv != null && cont.recv != 0 ? max((cont.read ?? 0), (cont.recv ?? 0)) : cont.recv;
+          cont.unread = (cont.seq ?? 0) - (cont.read ?? 0);
           break;
         case 'gone':
           // topic deleted or unsubscribed from
           _contacts.remove(pres.src);
-          _cacheManager.delete('topic', pres.src);
+          _cacheManager.delete('topic', pres.src ?? '');
           break;
         case 'del':
           // Update topic.del value.
           break;
         default:
-          _loggerService.log("Unsupported presence update in 'me' " + pres.what);
+          _loggerService.log("Unsupported presence update in 'me' " + (pres.what ?? ''));
       }
 
       onContactUpdate.add(ContactUpdateEvent(what: pres.what, contact: cont));
@@ -292,19 +294,19 @@ class TopicMe extends Topic {
         // New subscriptions and deleted/banned subscriptions have full
         // access mode (no + or - in the dacs string). Changes to known subscriptions are sent as
         // deltas, but they should not happen here.
-        var acs = AccessMode(pres.dacs);
+        AccessMode? acs = AccessMode(pres.dacs);
 
-        if (acs == null || acs.mode == INVALID) {
-          _loggerService.error('Invalid access mode update ' + pres.src + ' ' + pres.dacs.toString());
+        if (acs.mode == INVALID) {
+          _loggerService.error('Invalid access mode update ' + (pres.src ?? '') + ' ' + pres.dacs.toString());
           return;
         } else if (acs.mode == NONE) {
-          _loggerService.warn('Removing non-existent subscription ' + pres.src + ' ' + pres.dacs.toString());
+          _loggerService.warn('Removing non-existent subscription ' + (pres.src ?? '') + ' ' + pres.dacs.toString());
         } else {
           // New subscription. Send request for the full description.
           // Using .withOneSub (not .withLaterOneSub) to make sure IfModifiedSince is not set.
           getMeta(startMetaQuery().withOneSub(null, pres.src).build());
           // Create a dummy entry to catch online status update.
-          _contacts[pres.src] = TopicSubscription(touched: DateTime.now(), topic: pres.src, online: false, acs: acs);
+          _contacts[pres.src ?? ''] = TopicSubscription(touched: DateTime.now(), topic: pres.src, online: false, acs: acs);
         }
       } else if (pres.what == 'tags') {
         getMeta(startMetaQuery().withTags().build());
@@ -347,30 +349,30 @@ class TopicMe extends Topic {
   }
 
   /// Update a cached contact with new read/received/message count
-  void setMsgReadRecv(String contactName, String what, int seq, DateTime ts) {
+  void setMsgReadRecv(String contactName, String what, int seq, DateTime? ts) {
     var cont = _contacts[contactName];
     var oldVal, doUpdate = false;
 
     if (cont != null) {
-      seq = seq ?? 0;
+      this.seq = seq;
       cont.seq = cont.seq ?? 0;
       cont.read = cont.read ?? 0;
       cont.recv = cont.recv ?? 0;
       switch (what) {
         case 'recv':
           oldVal = cont.recv;
-          cont.recv = max(cont.recv, seq);
+          cont.recv = max(cont.recv ?? 0, seq);
           doUpdate = (oldVal != cont.recv);
           break;
         case 'read':
           oldVal = cont.read;
-          cont.read = max(cont.read, seq);
+          cont.read = max(cont.read ?? 0, seq);
           doUpdate = (oldVal != cont.read);
           break;
         case 'msg':
           oldVal = cont.seq;
-          cont.seq = max(cont.seq, seq);
-          if (cont.touched == null || cont.touched.isBefore(ts)) {
+          cont.seq = max(cont.seq ?? 0, seq);
+          if (cont.touched == null || (ts != null && cont.touched!.isBefore(ts))) {
             cont.touched = ts;
           }
           doUpdate = (oldVal != cont.seq);
@@ -378,20 +380,20 @@ class TopicMe extends Topic {
       }
 
       // Sanity checks.
-      if (cont.recv < cont.read) {
+      if ((cont.recv ?? 0) < (cont.read ?? 0)) {
         cont.recv = cont.read;
         doUpdate = true;
       }
-      if (cont.seq < cont.recv) {
+      if ((cont.seq ?? 0) < (cont.recv ?? 0)) {
         cont.seq = cont.recv;
-        if (cont.touched == null || cont.touched.isBefore(ts)) {
+        if (cont.touched == null || (ts != null && cont.touched!.isBefore(ts))) {
           cont.touched = ts;
         }
         doUpdate = true;
       }
-      cont.unread = cont.seq - cont.read;
+      cont.unread = (cont.seq ?? 0) - (cont.read ?? 0);
 
-      if (doUpdate && (cont.acs == null || !cont.acs.isMuted(null))) {
+      if (doUpdate && (cont.acs == null || !cont.acs!.isMuted(null))) {
         onContactUpdate.add(ContactUpdateEvent(what: what, contact: cont));
       }
     }
@@ -414,21 +416,21 @@ class TopicMe extends Topic {
   }
 
   /// Get a contact from cache
-  TopicSubscription getContact(String topicName) {
+  TopicSubscription? getContact(String topicName) {
     return _contacts[topicName];
   }
 
   /// Get access mode of a given contact from cache
-  AccessMode getContactAccessMode(String topicName) {
+  AccessMode? getContactAccessMode(String? topicName) {
     if (topicName != null && topicName.isNotEmpty) {
       var cont = _contacts[topicName];
-      return cont != null ? cont.acs : null;
+      return cont?.acs;
     }
     return null;
   }
 
   /// Check if contact is archived, i.e. contact.private.arch == true.
-  bool isContactArchived(String topicName) {
+  bool? isContactArchived(String topicName) {
     var cont = _contacts[topicName];
     return cont != null ? ((cont.private && cont.private.arch) ? true : false) : null;
   }

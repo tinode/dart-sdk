@@ -91,7 +91,7 @@ class SortedCache<T> {
   }
 
   /// Apply given function `callback` to all elements of the buffer
-  void forEach(Function(T, int) callback, int startIndex, int beforeIdx) {
+  void forEach(Function(T, int) callback, int? startIndex, int? beforeIdx) {
     startIndex = startIndex ?? 0;
     beforeIdx = beforeIdx ?? buffer.length;
     for (var i = startIndex; i < beforeIdx; i++) {

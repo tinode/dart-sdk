@@ -1,8 +1,8 @@
 class GetOptsType {
-  DateTime ims;
-  int limit;
-  String topic;
-  String user;
+  DateTime? ims;
+  int? limit;
+  String? topic;
+  String? user;
 
   GetOptsType({
     this.ims,
@@ -22,7 +22,7 @@ class GetOptsType {
 
   Map<String, dynamic> toMap() {
     var map = {
-      'ims': ims != null ? ims.toIso8601String() : null,
+      'ims': ims != null ? ims?.toIso8601String() : null,
       'limit': limit,
       'topic': topic,
       'user': user,
@@ -33,9 +33,9 @@ class GetOptsType {
 }
 
 class GetDataType {
-  int since;
-  int before;
-  int limit;
+  int? since;
+  int? before;
+  int? limit;
 
   GetDataType({this.since, this.limit, this.before});
 
@@ -59,13 +59,13 @@ class GetDataType {
 }
 
 class GetQuery {
-  bool cred;
-  bool tags;
-  String what;
-  GetOptsType desc;
-  GetOptsType sub;
-  GetDataType data;
-  GetDataType del;
+  bool? cred;
+  bool? tags;
+  String? what;
+  GetOptsType? desc;
+  GetOptsType? sub;
+  GetDataType? data;
+  GetDataType? del;
 
   GetQuery({
     this.desc,
@@ -93,10 +93,10 @@ class GetQuery {
     var map = {
       'cred': cred,
       'what': what,
-      'data': data != null ? data.toMap() : null,
-      'del': del != null ? del.toMap() : null,
-      'desc': desc != null ? desc.toMap() : null,
-      'sub': sub != null ? sub.toMap() : null,
+      'data': data != null ? data?.toMap() : null,
+      'del': del != null ? del?.toMap() : null,
+      'desc': desc != null ? desc?.toMap() : null,
+      'sub': sub != null ? sub?.toMap() : null,
       'tags': tags,
     };
     map.removeWhere((key, value) => value == null);

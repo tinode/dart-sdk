@@ -59,34 +59,34 @@ export 'package:tinode/src/topic.dart';
 /// Provides a simple interface to interact with tinode server using websocket
 class Tinode {
   /// Authentication service, responsible for managing credentials and user id
-  AuthService _authService;
+  late AuthService _authService;
 
   /// Cache manager service, responsible for read and write operations on cached data
-  CacheManager _cacheManager;
+  late CacheManager _cacheManager;
 
   /// Configuration service, responsible for storing library config and information
-  ConfigService _configService;
+  late ConfigService _configService;
 
   /// Tinode service, responsible for handling messages, preparing packets and sending them
-  TinodeService _tinodeService;
+  late TinodeService _tinodeService;
 
   /// Future manager, responsible for making futures and executing them
-  FutureManager _futureManager;
+  late FutureManager _futureManager;
 
   /// Logger service, responsible for logging content in different levels
-  LoggerService _loggerService;
+  late LoggerService _loggerService;
 
   /// Connection service, responsible for establishing a websocket connection to the server
-  ConnectionService _connectionService;
+  late ConnectionService _connectionService;
 
   /// `onMessage` subscription stored to unsubscribe later
-  StreamSubscription _onMessageSubscription;
+  StreamSubscription? _onMessageSubscription;
 
   /// `onConnected` subscription stored to unsubscribe later
-  StreamSubscription _onConnectedSubscription;
+  StreamSubscription? _onConnectedSubscription;
 
   /// `onDisconnect` subscription stored to unsubscribe later
-  StreamSubscription _onDisconnectedSubscription;
+  StreamSubscription? _onDisconnectedSubscription;
 
   /// `onConnected` event will be triggered when connection opens
   PublishSubject<void> onConnected = PublishSubject<void>();
@@ -161,10 +161,8 @@ class Tinode {
 
   /// Unsubscribe every subscription to prevent memory leak
   void _unsubscribeAll() {
-    _onMessageSubscription.cancel();
-    _onMessageSubscription = null;
-    _onConnectedSubscription.cancel();
-    _onConnectedSubscription = null;
+    _onMessageSubscription?.cancel();
+    _onConnectedSubscription?.cancel();
     _futureManager.stopCheckingExpiredFutures();
   }
 
@@ -183,7 +181,7 @@ class Tinode {
   }
 
   /// Handler for newly received messages from server
-  void _onConnectionMessage(String input) {
+  void _onConnectionMessage(String? input) {
     if (input == null || input == '') {
       return;
     }
@@ -229,6 +227,7 @@ class Tinode {
 
   /// Open the connection and send a hello packet to server
   Future connect() async {
+    _unsubscribeAll();
     _doSubscriptions();
     await _connectionService.connect();
     return hello();
@@ -256,12 +255,12 @@ class Tinode {
 
   /// Current user token
   AuthToken get token {
-    return _authService.authToken;
+    return _authService.authToken!;
   }
 
   /// Current user id
   String get userId {
-    return _authService.userId;
+    return _authService.userId!;
   }
 
   /// Say hello and set some initial configuration like:
@@ -269,7 +268,7 @@ class Tinode {
   /// * Device token for notifications
   /// * Language
   /// * Platform
-  Future<CtrlMessage> hello({String deviceToken}) async {
+  Future<CtrlMessage> hello({String? deviceToken}) async {
     CtrlMessage ctrl;
     if (deviceToken != null) {
       ctrl = await _tinodeService.hello(deviceToken: deviceToken);
@@ -310,27 +309,23 @@ class Tinode {
   /// Create user with 'basic' authentication scheme and immediately
   /// use it for authentication. Wrapper for `createAccount`
   Future createAccountBasic(String username, String password, bool login, AccountParams params) {
-    username ??= '';
-    username ??= '';
     var secret = base64.encode(utf8.encode(username + ':' + password));
     return createAccount('basic', secret, login, params);
   }
 
   /// Update account with basic
   Future updateAccountBasic(String userId, String username, String password, AccountParams params) {
-    username ??= '';
-    username ??= '';
     var secret = base64.encode(utf8.encode(username + ':' + password));
     return account(userId, 'basic', secret, false, params);
   }
 
   /// Authenticate current session
-  Future login(String scheme, String secret, Map<String, dynamic> cred) {
+  Future login(String scheme, String secret, Map<String, dynamic>? cred) {
     return _tinodeService.login(scheme, secret, cred);
   }
 
   /// Wrapper for `login` with basic authentication
-  Future loginBasic(String username, String password, Map<String, dynamic> cred) async {
+  Future loginBasic(String username, String password, Map<String, dynamic>? cred) async {
     var secret = base64.encode(utf8.encode(username + ':' + password));
     var ctrl = await login('basic', secret, cred);
     _authService.setLastLogin(username);
@@ -353,7 +348,7 @@ class Tinode {
 
   /// Get stored authentication token
   AuthToken getAuthenticationToken() {
-    return _authService.authToken;
+    return _authService.authToken!;
   }
 
   /// Send a topic subscription request
@@ -427,7 +422,7 @@ class Tinode {
   /// Get a named topic, either pull it from cache or create a new instance
   /// There is a single instance of topic for each name
   Topic getTopic(String topicName) {
-    return _tinodeService.getTopic(topicName);
+    return _tinodeService.getTopic(topicName)!;
   }
 
   /// Check if named topic is already present in cache
@@ -458,17 +453,17 @@ class Tinode {
 
   /// Instantiate 'me' topic or get it from cache
   TopicMe getMeTopic() {
-    return _tinodeService.getTopic(topic_names.TOPIC_ME);
+    return _tinodeService.getTopic(topic_names.TOPIC_ME) as TopicMe;
   }
 
   /// Instantiate 'fnd' (find) topic or get it from cache
   TopicFnd getFndTopic() {
-    return _tinodeService.getTopic(topic_names.TOPIC_FND);
+    return _tinodeService.getTopic(topic_names.TOPIC_FND) as TopicFnd;
   }
 
   /// Get the user id of the the current authenticated user
   String getCurrentUserId() {
-    return _authService.userId;
+    return _authService.userId!;
   }
 
   /// Check if the given user ID is equal to the current user's user id
@@ -478,7 +473,7 @@ class Tinode {
 
   /// Get login (user id) used for last successful authentication.
   String getCurrentLogin() {
-    return _authService.lastLogin;
+    return _authService.lastLogin!;
   }
 
   /// Return information about the server: protocol, version, limits, and build timestamp
@@ -499,14 +494,14 @@ class Tinode {
   /// Check if given topic is online
   bool isTopicOnline(String topicName) {
     var me = getMeTopic();
-    var cont = me != null ? me.getContact(topicName) : null;
-    return cont != null && cont.online;
+    var cont = me.getContact(topicName);
+    return cont != null && cont.online!;
   }
 
   /// Get access mode for the given contact
-  AccessMode getTopicAccessMode(String topicName) {
+  AccessMode? getTopicAccessMode(String topicName) {
     var me = getMeTopic();
-    var cont = me != null ? me.getContact(topicName) : null;
+    var cont = me.getContact(topicName);
     return cont != null ? cont.acs : null;
   }
 }

@@ -1,6 +1,6 @@
 class AuthToken {
-  final String token;
-  final DateTime expires;
+  final String? token;
+  final DateTime? expires;
 
   AuthToken({
     this.token,
@@ -9,8 +9,8 @@ class AuthToken {
 }
 
 class OnLoginData {
-  final int code;
-  final String text;
+  final int? code;
+  final String? text;
 
   OnLoginData({
     this.code,

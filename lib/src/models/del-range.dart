@@ -1,7 +1,7 @@
 class DelRange {
-  int low;
-  int hi;
-  bool all;
+  int? low;
+  int? hi;
+  bool? all;
 
   DelRange({
     this.low,

@@ -6,11 +6,11 @@ abstract class PacketData {
 }
 
 class HiPacketData extends PacketData {
-  final String ver;
-  final String ua;
-  final String dev;
-  final String lang;
-  final String platf;
+  final String? ver;
+  final String? ua;
+  final String? dev;
+  final String? lang;
+  final String? platf;
 
   HiPacketData({
     this.ua,
@@ -23,24 +23,24 @@ class HiPacketData extends PacketData {
   @override
   Map<String, String> toMap() {
     return {
-      'ua': ua,
-      'ver': ver,
-      'dev': dev,
-      'lang': lang,
-      'platf': platf,
+      'ua': ua ?? '',
+      'ver': ver ?? '',
+      'dev': dev ?? '',
+      'lang': lang ?? '',
+      'platf': platf ?? '',
     };
   }
 }
 
 class AccPacketData extends PacketData {
-  String user;
-  String scheme;
-  String secret;
-  bool login;
-  List<String> tags;
-  Map<String, dynamic> desc;
+  String? user;
+  String? scheme;
+  String? secret;
+  bool? login;
+  List<String>? tags;
+  Map<String, dynamic>? desc;
   dynamic cred;
-  String token;
+  String? token;
 
   AccPacketData({
     this.user,
@@ -69,9 +69,9 @@ class AccPacketData extends PacketData {
 }
 
 class LoginPacketData extends PacketData {
-  String scheme;
-  String secret;
-  Map<String, dynamic> cred;
+  String? scheme;
+  String? secret;
+  Map<String, dynamic>? cred;
 
   LoginPacketData({this.scheme, this.secret, this.cred});
 
@@ -86,9 +86,9 @@ class LoginPacketData extends PacketData {
 }
 
 class SubPacketData extends PacketData {
-  String topic;
-  SetParams set;
-  GetQuery get;
+  String? topic;
+  SetParams? set;
+  GetQuery? get;
 
   SubPacketData({this.topic, this.set, this.get});
 
@@ -97,14 +97,14 @@ class SubPacketData extends PacketData {
     return {
       'topic': topic,
       'set': set,
-      'get': get.toMap(),
+      'get': get?.toMap(),
     };
   }
 }
 
 class LeavePacketData extends PacketData {
-  final String topic;
-  bool unsub;
+  final String? topic;
+  bool? unsub;
 
   LeavePacketData({this.topic, this.unsub});
 
@@ -118,13 +118,13 @@ class LeavePacketData extends PacketData {
 }
 
 class PubPacketData extends PacketData {
-  String topic;
-  bool noecho;
+  String? topic;
+  bool? noecho;
   dynamic head;
   dynamic content;
-  int seq;
-  String from;
-  DateTime ts;
+  int? seq;
+  String? from;
+  DateTime? ts;
 
   PubPacketData({this.topic, this.noecho, this.head, this.content, this.seq, this.from, this.ts});
 
@@ -143,8 +143,8 @@ class PubPacketData extends PacketData {
 }
 
 class GetPacketData extends PacketData {
-  String topic;
-  String what;
+  String? topic;
+  String? what;
   dynamic desc;
   dynamic sub;
   dynamic data;
@@ -164,11 +164,11 @@ class GetPacketData extends PacketData {
 }
 
 class SetPacketData extends PacketData {
-  String topic;
+  String? topic;
   dynamic desc;
   dynamic sub;
   dynamic cred;
-  List<String> tags;
+  List<String>? tags;
 
   SetPacketData({this.topic, this.desc, this.sub, this.tags, this.cred});
 
@@ -185,11 +185,11 @@ class SetPacketData extends PacketData {
 }
 
 class DelPacketData extends PacketData {
-  String topic;
-  String what;
+  String? topic;
+  String? what;
   dynamic delseq;
   dynamic user;
-  bool hard;
+  bool? hard;
   dynamic cred;
 
   DelPacketData({this.topic, this.what, this.delseq, this.user, this.hard, this.cred});
@@ -208,8 +208,8 @@ class DelPacketData extends PacketData {
 }
 
 class NotePacketData extends PacketData {
-  String topic;
-  String what;
+  String? topic;
+  String? what;
   dynamic seq;
 
   NotePacketData({this.topic, this.what, this.seq});

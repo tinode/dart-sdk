@@ -19,14 +19,14 @@ class TopicFnd extends Topic {
     _contacts = {};
 
     for (var sub in subscriptions) {
-      var indexBy = sub.topic ?? sub.user;
+      var indexBy = sub.topic ?? sub.user ?? '';
       _contacts[indexBy] = sub;
       updateCount++;
       onMetaSub.add(sub);
     }
 
     if (updateCount > 0) {
-      onSubsUpdated.add(_contacts.values);
+      onSubsUpdated.add(_contacts.values.toList());
     }
   }
 
@@ -48,6 +48,6 @@ class TopicFnd extends Topic {
   }
 
   List<TopicSubscription> get contacts {
-    return _contacts.values;
+    return _contacts.values.toList();
   }
 }

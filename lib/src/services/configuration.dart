@@ -4,13 +4,13 @@ import 'package:tinode/src/models/server-configuration.dart';
 import 'package:tinode/src/models/configuration.dart';
 
 class ConfigService {
-  ServerConfiguration _serverConfiguration;
-  AppSettings _appSettings;
-  String humanLanguage;
-  String deviceToken;
-  bool loggerEnabled;
-  String appVersion;
-  String appName;
+  late ServerConfiguration _serverConfiguration;
+  late AppSettings _appSettings;
+  String? humanLanguage;
+  String? deviceToken;
+  bool? loggerEnabled;
+  String appVersion = '';
+  String appName = '';
 
   ConfigService(bool loggerEnabled) {
     _appSettings = AppSettings(
@@ -24,7 +24,7 @@ class ConfigService {
     );
 
     deviceToken = null;
-    appVersion = '1.16.0';
+    appVersion = '1.0.0-alpha';
     humanLanguage = 'en-US';
     this.loggerEnabled = loggerEnabled;
   }

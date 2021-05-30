@@ -3,36 +3,36 @@ import 'package:tinode/src/models/def-acs.dart';
 
 class TopicDescription {
   /// Topic creation date
-  final DateTime created;
+  final DateTime? created;
 
   /// Topic update date
-  DateTime updated;
+  DateTime? updated;
 
   /// Topic touched date
-  final DateTime touched;
+  final DateTime? touched;
 
   /// account status; included for `me` topic only, and only if
   /// the request is sent by a root-authenticated session.
-  final String status;
+  final String? status;
 
   /// topic's default access permissions; present only if the current user has 'S' permission
-  DefAcs defacs;
+  DefAcs? defacs;
 
   /// Actual access permissions
-  AccessMode acs;
+  AccessMode? acs;
 
   /// Server-issued id of the last {data} message
-  final int seq;
+  final int? seq;
 
   /// Id of the message user claims through {note} message to have read, optional
-  final int read;
+  final int? read;
 
   /// Like 'read', but received, optional
-  final int recv;
+  final int? recv;
 
   /// in case some messages were deleted, the greatest ID
   /// of a deleted message, optional
-  final int clear;
+  final int? clear;
 
   /// Application-defined data that's available to all topic subscribers
   final dynamic public;
@@ -40,7 +40,7 @@ class TopicDescription {
   /// Application-defined data that's available to the current user only
   final dynamic private;
 
-  bool noForwarding;
+  bool? noForwarding;
 
   TopicDescription({
     this.created,

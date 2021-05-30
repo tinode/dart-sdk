@@ -38,16 +38,12 @@ class CacheManager {
   }
 
   /// Executes a function for each element in cache, just like map method on `Map`
-  void map(Function(String, dynamic) function) {
+  void map(MapEntry Function(String, dynamic) function) {
     _cache.map(function);
   }
 
   /// This is a wrapper for `get` function which gets a user from cache by userId
-  TopicSubscription getUser(String userId) {
-    TopicSubscription pub = get('user', userId);
-    if (pub != null) {
-      return pub;
-    }
+  TopicSubscription? getUser(String userId) {
     return get('user', userId);
   }
 
@@ -63,7 +59,7 @@ class CacheManager {
 
   /// This is a wrapper for `put` function which puts a topic into cache
   void putTopic(Topic topic) {
-    return put('topic', topic.name, topic);
+    return put('topic', (topic.name ?? ''), topic);
   }
 
   /// This is a wrapper for `delete` function which deletes a topic from cache by topic name

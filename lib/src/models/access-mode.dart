@@ -13,9 +13,9 @@ var AccessModePermissionsBITMASK = JOIN | READ | WRITE | PRES | APPROVE | SHARE 
 
 /// Actual access and permission
 class AccessMode {
-  int _given;
-  int _want;
-  int mode;
+  late int _given;
+  late int _want;
+  late int mode;
 
   int operator [](other) {
     switch (other) {
@@ -39,7 +39,7 @@ class AccessMode {
         if (acs['mode'] is int) {
           mode = acs['mode'];
         } else {
-          mode = AccessMode.decode(acs['mode']);
+          mode = AccessMode.decode(acs['mode']) ?? 0;
         }
       } else {
         mode = _given & _want;
@@ -48,7 +48,7 @@ class AccessMode {
   }
 
   /// Decodes string mode to integer
-  static int decode(dynamic mode) {
+  static int? decode(dynamic? mode) {
     if (mode == null) {
       return null;
     } else if (mode is int) {
@@ -84,7 +84,7 @@ class AccessMode {
   }
 
   /// Decodes integer mode to string
-  static String encode(int val) {
+  static String? encode(int? val) {
     if (val == null || val == INVALID) {
       return null;
     } else if (val == NONE) {
@@ -103,7 +103,7 @@ class AccessMode {
   }
 
   /// Updates mode with newly given permissions
-  static int update(int val, String upd) {
+  static int update(int val, String? upd) {
     if (upd == null || !(upd is String)) {
       return val;
     }
@@ -145,7 +145,7 @@ class AccessMode {
       // The string is an explicit new value 'ABC' rather than delta.
       var val0 = AccessMode.decode(upd);
       if (val0 != INVALID) {
-        val = val0;
+        val = val0 ?? 0;
       }
     }
 
@@ -154,8 +154,8 @@ class AccessMode {
 
   /// Get diff from two modes
   static int diff(dynamic a1, dynamic a2) {
-    var a1d = AccessMode.decode(a1);
-    var a2d = AccessMode.decode(a2);
+    var a1d = AccessMode.decode(a1) ?? 0;
+    var a2d = AccessMode.decode(a2) ?? 0;
 
     if (a1d == INVALID || a2d == INVALID) {
       return INVALID;
@@ -166,7 +166,7 @@ class AccessMode {
   /// Returns true if AccessNode has x flag
   ///
   /// side: `mode` / `want` / `given`
-  static bool checkFlag(AccessMode val, String side, int flag) {
+  static bool checkFlag(AccessMode val, String? side, int flag) {
     side ??= 'mode';
     var found = ['given', 'want', 'mode'].where((s) {
       return s == side;
@@ -178,12 +178,12 @@ class AccessMode {
     throw Exception('Invalid AccessMode component "' + side + '"');
   }
 
-  String getMode() {
+  String? getMode() {
     return AccessMode.encode(mode);
   }
 
   AccessMode setMode(dynamic mode) {
-    this.mode = AccessMode.decode(mode);
+    this.mode = AccessMode.decode(mode) ?? 0;
     return this;
   }
 
@@ -192,43 +192,43 @@ class AccessMode {
     return this;
   }
 
-  String getGiven() {
+  String? getGiven() {
     return AccessMode.encode(_given);
   }
 
   AccessMode setGiven(dynamic given) {
-    _given = AccessMode.decode(given);
+    _given = AccessMode.decode(given) ?? 0;
     return this;
   }
 
-  AccessMode updateGiven(String update) {
+  AccessMode updateGiven(String? update) {
     _given = AccessMode.update(_given, update);
     return this;
   }
 
-  String getWant() {
+  String? getWant() {
     return AccessMode.encode(_want);
   }
 
   AccessMode setWant(dynamic want) {
-    _want = AccessMode.decode(want);
+    _want = AccessMode.decode(want) ?? 0;
     return this;
   }
 
-  AccessMode updateWant(String update) {
+  AccessMode updateWant(String? update) {
     _want = AccessMode.update(_want, update);
     return this;
   }
 
-  String getMissing() {
+  String? getMissing() {
     return AccessMode.encode(_want & ~_given);
   }
 
-  String getExcessive() {
+  String? getExcessive() {
     return AccessMode.encode(_given & ~_want);
   }
 
-  AccessMode updateAll(AccessMode val) {
+  AccessMode updateAll(AccessMode? val) {
     if (val != null) {
       updateGiven(val.getGiven());
       updateWant(val.getWant());
@@ -241,11 +241,11 @@ class AccessMode {
     return AccessMode.checkFlag(this, side, OWNER);
   }
 
-  bool isPresencer(String side) {
+  bool isPresencer(String? side) {
     return AccessMode.checkFlag(this, side, PRES);
   }
 
-  bool isMuted(String side) {
+  bool isMuted(String? side) {
     return !isPresencer(side);
   }
 
@@ -279,10 +279,16 @@ class AccessMode {
 
   @override
   String toString() {
-    return '{"mode": "' + AccessMode.encode(mode) + '", "given": "' + AccessMode.encode(_given) + '", "want": "' + AccessMode.encode(_want) + '"}';
+    return '{"mode": "' +
+        (AccessMode.encode(mode) ?? '') +
+        '", "given": "' +
+        (AccessMode.encode(_given) ?? '') +
+        '", "want": "' +
+        (AccessMode.encode(_want) ?? '') +
+        '"}';
   }
 
   Map<String, String> jsonHelper() {
-    return {'mode': AccessMode.encode(mode), 'given': AccessMode.encode(_given), 'want': AccessMode.encode(_want)};
+    return {'mode': AccessMode.encode(mode) ?? '', 'given': AccessMode.encode(_given) ?? '', 'want': AccessMode.encode(_want) ?? ''};
   }
 }

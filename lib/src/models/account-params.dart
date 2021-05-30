@@ -1,12 +1,12 @@
 import 'package:tinode/src/models/def-acs.dart';
 
 class AccountParams {
-  dynamic cred;
-  String token;
-  DefAcs defacs;
-  List<String> tags;
-  Map<String, dynamic> public;
-  Map<String, dynamic> private;
+  dynamic? cred;
+  String? token;
+  DefAcs? defacs;
+  List<String>? tags;
+  Map<String, dynamic>? public;
+  Map<String, dynamic>? private;
 
   AccountParams({
     this.defacs,

@@ -17,10 +17,10 @@ class ConnectionService {
   final ConnectionOptions _options;
 
   /// Websocket wrapper channel based on `dart:io`
-  IOWebSocketChannel _channel;
+  late IOWebSocketChannel _channel;
 
   /// Websocket connection
-  WebSocket _ws;
+  WebSocket? _ws;
 
   /// This callback will be called when connection is opened
   PublishSubject<dynamic> onOpen = PublishSubject<dynamic>();
@@ -31,7 +31,7 @@ class ConnectionService {
   /// This callback will be called when we receive a message from server
   PublishSubject<String> onMessage = PublishSubject<String>();
 
-  LoggerService _loggerService;
+  late LoggerService _loggerService;
 
   bool _connecting = false;
 
@@ -41,7 +41,7 @@ class ConnectionService {
   }
 
   bool get isConnected {
-    return _ws != null && _ws.readyState == WebSocket.open;
+    return _ws != null && _ws?.readyState == WebSocket.open;
   }
 
   /// Start opening websocket connection
@@ -54,7 +54,7 @@ class ConnectionService {
     _ws = await WebSocket.connect(Tools.makeBaseURL(_options)).timeout(Duration(milliseconds: 5000));
     _connecting = false;
     _loggerService.log('Connected.');
-    _channel = IOWebSocketChannel(_ws);
+    _channel = IOWebSocketChannel(_ws!);
     onOpen.add('Opened');
     _channel.stream.listen((message) {
       onMessage.add(message);
@@ -71,9 +71,9 @@ class ConnectionService {
 
   /// Close current websocket connection
   void disconnect() {
-    _channel = null;
+    _channel = null as IOWebSocketChannel;
     _connecting = false;
-    _ws.close(status.goingAway);
+    _ws?.close(status.goingAway);
     onDisconnect.add(null);
   }
 

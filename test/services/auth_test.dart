@@ -14,7 +14,7 @@ void main() {
 
   test('setAuthToken() should set auth token', () {
     service.setAuthToken(AuthToken(token: 'token', expires: DateTime.now()));
-    expect(service.authToken.token, equals('token'));
+    expect(service.authToken?.token, equals('token'));
   });
 
   test('setUserId() should set userId', () {
@@ -33,7 +33,7 @@ void main() {
       },
     ));
     expect(service.userId, equals('userTest'));
-    expect(service.authToken.token, equals('tokenTest'));
-    expect(service.authToken.expires, equals(expireDate));
+    expect(service.authToken?.token, equals('tokenTest'));
+    expect(service.authToken?.expires, equals(expireDate));
   });
 }
