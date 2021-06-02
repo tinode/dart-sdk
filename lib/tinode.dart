@@ -254,8 +254,8 @@ class Tinode {
   }
 
   /// Current user token
-  AuthToken get token {
-    return _authService.authToken!;
+  AuthToken? get token {
+    return _authService.authToken;
   }
 
   /// Current user id
@@ -347,8 +347,8 @@ class Tinode {
   }
 
   /// Get stored authentication token
-  AuthToken getAuthenticationToken() {
-    return _authService.authToken!;
+  AuthToken? getAuthenticationToken() {
+    return _authService.authToken;
   }
 
   /// Send a topic subscription request
