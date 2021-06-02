@@ -1,20 +1,46 @@
-int NONE = 0x00;
-int JOIN = 0x01;
-int READ = 0x02;
-int WRITE = 0x04;
-int PRES = 0x08;
-int APPROVE = 0x10;
-int SHARE = 0x20;
-int DELETE = 0x40;
-int OWNER = 0x80;
-int INVALID = 0x100000;
+/// This numeric value represents `N` or `n` access mode flag.
+const int NONE = 0x00;
 
-var AccessModePermissionsBITMASK = JOIN | READ | WRITE | PRES | APPROVE | SHARE | DELETE | OWNER;
+/// This numeric value represents `J` access mode flag.
+const int JOIN = 0x01;
 
-/// Actual access and permission
+/// This numeric value represents `R` access mode flag.
+const int READ = 0x02;
+
+/// This numeric value represents `W` access mode flag.
+const int WRITE = 0x04;
+
+/// This numeric value represents `P` access mode flag.
+const int PRES = 0x08;
+
+/// This numeric value represents `A` access mode flag.
+const int APPROVE = 0x10;
+
+/// This numeric value represents `S` access mode flag.
+const int SHARE = 0x20;
+
+/// This numeric value represents `D` access mode flag.
+const int DELETE = 0x40;
+
+/// This numeric value represents `O` access mode flag.
+const int OWNER = 0x80;
+
+/// This numeric value represents `invalid` access mode flag.
+const int INVALID = 0x100000;
+
+/// Bitmask for validating access modes
+const int AccessModePermissionsBITMASK = JOIN | READ | WRITE | PRES | APPROVE | SHARE | DELETE | OWNER;
+
+/// Access control is mostly usable for group topics. Its usability for me and P2P topics is
+/// limited to managing presence notifications and banning uses from initiating or continuing P2P conversations.
 class AccessMode {
+  /// Permissions granted to user by topic's manager
   late int _given;
+
+  /// User's desired permissions
   late int _want;
+
+  /// Combination of want and given
   late int mode;
 
   int operator [](other) {
@@ -30,6 +56,7 @@ class AccessMode {
     }
   }
 
+  /// Create new instance by passing an `AccessMode` or `Map<String, dynamic>`
   AccessMode(dynamic acs) {
     if (acs != null) {
       _given = acs['given'] is int ? acs['given'] : AccessMode.decode(acs['given']);
@@ -47,7 +74,7 @@ class AccessMode {
     }
   }
 
-  /// Decodes string mode to integer
+  /// Decodes string access mode to integer
   static int? decode(dynamic mode) {
     if (mode == null) {
       return null;
@@ -83,7 +110,7 @@ class AccessMode {
     return m0;
   }
 
-  /// Decodes integer mode to string
+  /// Decodes integer access mode to string
   static String? encode(int val) {
     if (val == INVALID) {
       return null;
@@ -178,6 +205,7 @@ class AccessMode {
     throw Exception('Invalid AccessMode component "' + side + '"');
   }
 
+  /// Returns encoded `mode`
   String? getMode() {
     return AccessMode.encode(mode);
   }
@@ -192,6 +220,7 @@ class AccessMode {
     return this;
   }
 
+  /// Returns encoded `given`
   String? getGiven() {
     return AccessMode.encode(_given);
   }
@@ -206,6 +235,7 @@ class AccessMode {
     return this;
   }
 
+  /// Returns encoded `want`
   String? getWant() {
     return AccessMode.encode(_want);
   }
@@ -220,10 +250,12 @@ class AccessMode {
     return this;
   }
 
+  /// What user `want` that is not `given`
   String? getMissing() {
     return AccessMode.encode(_want & ~_given);
   }
 
+  /// What permission is `given` and user does not `want`
   String? getExcessive() {
     return AccessMode.encode(_given & ~_want);
   }
@@ -256,6 +288,7 @@ class AccessMode {
     return !isPresencer(side);
   }
 
+  /// Can this user subscribe on topic?
   bool isJoiner(String side) {
     return AccessMode.checkFlag(this, side, JOIN);
   }
@@ -287,19 +320,19 @@ class AccessMode {
   @override
   String toString() {
     return '{"mode": "' +
-        (AccessMode.encode(mode) ?? '') +
+        (AccessMode.encode(mode) ?? 'invalid') +
         '", "given": "' +
-        (AccessMode.encode(_given) ?? '') +
+        (AccessMode.encode(_given) ?? 'invalid') +
         '", "want": "' +
-        (AccessMode.encode(_want) ?? '') +
+        (AccessMode.encode(_want) ?? 'invalid') +
         '"}';
   }
 
   Map<String, String> jsonHelper() {
     return {
-      'mode': AccessMode.encode(mode) ?? 'invalid_mode',
-      'given': AccessMode.encode(_given) ?? 'invalid_given',
-      'want': AccessMode.encode(_want) ?? 'invalid_want',
+      'mode': AccessMode.encode(mode) ?? 'invalid',
+      'given': AccessMode.encode(_given) ?? 'invalid',
+      'want': AccessMode.encode(_want) ?? 'invalid',
     };
   }
 }
