@@ -48,7 +48,7 @@ class AccessMode {
   }
 
   /// Decodes string mode to integer
-  static int? decode(dynamic? mode) {
+  static int? decode(dynamic mode) {
     if (mode == null) {
       return null;
     } else if (mode is int) {
@@ -84,8 +84,8 @@ class AccessMode {
   }
 
   /// Decodes integer mode to string
-  static String? encode(int? val) {
-    if (val == null || val == INVALID) {
+  static String? encode(int val) {
+    if (val == INVALID) {
       return null;
     } else if (val == NONE) {
       return 'N';
@@ -103,8 +103,8 @@ class AccessMode {
   }
 
   /// Updates mode with newly given permissions
-  static int update(int val, String? upd) {
-    if (upd == null || !(upd is String)) {
+  static int update(int val, String upd) {
+    if (!(upd is String)) {
       return val;
     }
 
@@ -201,7 +201,7 @@ class AccessMode {
     return this;
   }
 
-  AccessMode updateGiven(String? update) {
+  AccessMode updateGiven(String update) {
     _given = AccessMode.update(_given, update);
     return this;
   }
@@ -215,7 +215,7 @@ class AccessMode {
     return this;
   }
 
-  AccessMode updateWant(String? update) {
+  AccessMode updateWant(String update) {
     _want = AccessMode.update(_want, update);
     return this;
   }
@@ -230,8 +230,15 @@ class AccessMode {
 
   AccessMode updateAll(AccessMode? val) {
     if (val != null) {
-      updateGiven(val.getGiven());
-      updateWant(val.getWant());
+      var g = val.getGiven();
+      if (g != null) {
+        updateGiven(g);
+      }
+
+      var w = val.getWant();
+      if (w != null) {
+        updateWant(w);
+      }
       mode = _given & _want;
     }
     return this;
@@ -289,6 +296,10 @@ class AccessMode {
   }
 
   Map<String, String> jsonHelper() {
-    return {'mode': AccessMode.encode(mode) ?? '', 'given': AccessMode.encode(_given) ?? '', 'want': AccessMode.encode(_want) ?? ''};
+    return {
+      'mode': AccessMode.encode(mode) ?? 'invalid_mode',
+      'given': AccessMode.encode(_given) ?? 'invalid_given',
+      'want': AccessMode.encode(_want) ?? 'invalid_want',
+    };
   }
 }

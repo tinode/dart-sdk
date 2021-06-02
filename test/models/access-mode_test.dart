@@ -19,10 +19,6 @@ void main() {
     expect(AccessMode.decode('RWP'), equals(14));
   });
 
-  test('encode() returns null for null value', () {
-    expect(AccessMode.encode(null), equals(null));
-  });
-
   test('encode() returns none for 0', () {
     expect(AccessMode.encode(0), equals('N'));
   });
