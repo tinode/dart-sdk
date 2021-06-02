@@ -75,7 +75,7 @@ class TopicMe extends Topic {
           } else {
             cont.seen = Seen(when: DateTime.now());
           }
-          onContactUpdate.add(ContactUpdateEvent(what: 'off', contact: cont));
+          onContactUpdate.add(ContactUpdateEvent('off', cont));
         }
       });
     }
@@ -288,7 +288,7 @@ class TopicMe extends Topic {
           _loggerService.log("Unsupported presence update in 'me' " + (pres.what ?? ''));
       }
 
-      onContactUpdate.add(ContactUpdateEvent(what: pres.what, contact: cont));
+      onContactUpdate.add(ContactUpdateEvent(pres.what!, cont));
     } else {
       if (pres.what == 'acs') {
         // New subscriptions and deleted/banned subscriptions have full
@@ -394,7 +394,7 @@ class TopicMe extends Topic {
       cont.unread = (cont.seq ?? 0) - (cont.read ?? 0);
 
       if (doUpdate && (cont.acs == null || !cont.acs!.isMuted(null))) {
-        onContactUpdate.add(ContactUpdateEvent(what: what, contact: cont));
+        onContactUpdate.add(ContactUpdateEvent(what, cont));
       }
     }
   }
