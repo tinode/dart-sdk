@@ -39,7 +39,7 @@ export 'package:tinode/src/models/server-messages.dart';
 export 'package:tinode/src/models/account-params.dart';
 export 'package:tinode/src/models/message-status.dart';
 export 'package:tinode/src/models/contact-update.dart';
-export 'package:tinode/src/models/configuration.dart';
+export 'package:tinode/src/models/app-settings.dart';
 export 'package:tinode/src/models/packet-types.dart';
 export 'package:tinode/src/models/packet-data.dart';
 export 'package:tinode/src/models/auth-token.dart';

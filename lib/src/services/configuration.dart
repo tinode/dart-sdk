@@ -1,7 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:tinode/src/models/server-configuration.dart';
-import 'package:tinode/src/models/configuration.dart';
+import 'package:tinode/src/models/app-settings.dart';
 
 class ConfigService {
   late ServerConfiguration _serverConfiguration;
