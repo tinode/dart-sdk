@@ -4,7 +4,8 @@ void main(List<String> args) async {
   var key = 'AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K';
   var host = 'sandbox.tinode.co';
 
-  var tinode = Tinode('Moein', ConnectionOptions(apiKey: key, host: host, secure: true), true);
+  var loggerEnabled = false;
+  var tinode = Tinode('Moein', ConnectionOptions(host, key, secure: true), loggerEnabled);
   await tinode.connect();
   print('Is Connected:' + tinode.isConnected.toString());
   await tinode.loginBasic('bob', 'bob123', null);

@@ -13,7 +13,7 @@ class Tools {
   /// Create base URL based on connection options
   static String makeBaseURL(ConnectionOptions config) {
     var url = (config.secure ?? false) ? 'wss://' : 'ws://';
-    return url + (config.host ?? '') + '/v0/channels?apikey=' + (config.apiKey ?? '');
+    return url + config.host + '/v0/channels?apikey=' + config.apiKey;
   }
 
   /// Get next message Id

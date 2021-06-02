@@ -17,7 +17,7 @@ void main() {
   GetIt.I.registerSingleton<ConfigService>(ConfigService(false));
   GetIt.I.registerSingleton<LoggerService>(LoggerService());
   GetIt.I.registerSingleton<AuthService>(AuthService());
-  GetIt.I.registerSingleton<ConnectionService>(ConnectionService(ConnectionOptions()));
+  GetIt.I.registerSingleton<ConnectionService>(ConnectionService(ConnectionOptions('', '')));
   GetIt.I.registerSingleton<FutureManager>(FutureManager());
   GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
   GetIt.I.registerSingleton<CacheManager>(CacheManager());
