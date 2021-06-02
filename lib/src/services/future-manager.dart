@@ -6,7 +6,7 @@ import 'package:tinode/src/services/configuration.dart';
 import 'package:tinode/src/services/logger.dart';
 
 class FutureManager {
-  final Map<String, FeatureCallback> _pendingFutures = {};
+  final Map<String, FutureCallback> _pendingFutures = {};
   Timer? _expiredFuturesCheckerTimer;
   late ConfigService _configService;
   late LoggerService _loggerService;
@@ -19,7 +19,7 @@ class FutureManager {
   Future<dynamic> makeFuture(String id) {
     var completer = Completer();
     if (id != null) {
-      _pendingFutures[id] = FeatureCallback(completer: completer, ts: DateTime.now());
+      _pendingFutures[id] = FutureCallback(completer: completer, ts: DateTime.now());
     }
     return completer.future;
   }
@@ -42,7 +42,7 @@ class FutureManager {
     var expires = DateTime.now().subtract(Duration(milliseconds: _configService.appSettings.expireFuturesTimeout));
 
     var markForRemoval = <String>[];
-    _pendingFutures.forEach((String key, FeatureCallback featureCB) {
+    _pendingFutures.forEach((String key, FutureCallback featureCB) {
       if (featureCB.ts!.isBefore(expires)) {
         _loggerService.error('Promise expired ' + key.toString());
         featureCB.completer?.completeError(exception);
@@ -63,7 +63,7 @@ class FutureManager {
   }
 
   void rejectAllFutures(int code, String reason) {
-    _pendingFutures.forEach((String key, FeatureCallback cb) {
+    _pendingFutures.forEach((String key, FutureCallback cb) {
       cb.completer?.completeError(reason);
     });
   }

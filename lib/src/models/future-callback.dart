@@ -1,8 +1,8 @@
 import 'dart:async';
 
-class FeatureCallback {
+class FutureCallback {
   final DateTime? ts;
   final Completer? completer;
 
-  FeatureCallback({this.ts, this.completer});
+  FutureCallback({this.ts, this.completer});
 }
