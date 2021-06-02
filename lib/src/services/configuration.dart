@@ -13,16 +13,7 @@ class ConfigService {
   String appName = '';
 
   ConfigService(bool loggerEnabled) {
-    _appSettings = AppSettings(
-      localSeqId: 0xFFFFFFF,
-      networkError: 503,
-      errorText: 'Connection failed',
-      expireFuturesTimeout: 5000,
-      expireFuturesPeriod: 1000,
-      networkUser: 418,
-      networkUserText: 'Disconnected by client',
-    );
-
+    _appSettings = AppSettings(0xFFFFFFF, 418, 503, 'Connection failed', 'Disconnected by client', 1000, 5000);
     deviceToken = null;
     appVersion = '1.0.0-alpha';
     humanLanguage = 'en-US';

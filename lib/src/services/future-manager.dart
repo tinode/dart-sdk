@@ -24,12 +24,12 @@ class FutureManager {
     return completer.future;
   }
 
-  void execFuture(String? id, int? code, dynamic onOK, String? errorText) {
+  void execFuture(String? id, int code, dynamic onOK, String? errorText) {
     var callbacks = _pendingFutures[id];
 
     if (callbacks != null) {
       _pendingFutures.remove(id);
-      if (code != null && code >= 200 && code < 400) {
+      if (code >= 200 && code < 400) {
         callbacks.completer?.complete(onOK);
       } else {
         callbacks.completer?.completeError(Exception((errorText ?? '') + ' (' + code.toString() + ')'));
@@ -39,7 +39,7 @@ class FutureManager {
 
   void checkExpiredFutures() {
     var exception = Exception('Timeout (504)');
-    var expires = DateTime.now().subtract(Duration(milliseconds: (_configService.appSettings.expireFuturesTimeout ?? 0)));
+    var expires = DateTime.now().subtract(Duration(milliseconds: _configService.appSettings.expireFuturesTimeout));
 
     var markForRemoval = <String>[];
     _pendingFutures.forEach((String key, FeatureCallback featureCB) {
@@ -57,7 +57,7 @@ class FutureManager {
     if (_expiredFuturesCheckerTimer != null && _expiredFuturesCheckerTimer!.isActive) {
       return;
     }
-    _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: (_configService.appSettings.expireFuturesPeriod ?? 0)), (_) {
+    _expiredFuturesCheckerTimer = Timer.periodic(Duration(milliseconds: _configService.appSettings.expireFuturesPeriod), (_) {
       checkExpiredFutures();
     });
   }

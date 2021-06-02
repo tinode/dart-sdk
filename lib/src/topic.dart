@@ -403,8 +403,8 @@ class Topic {
     // ignore: omit_local_variable_types
     List<DelRange> toSend = [];
     ranges.forEach((r) {
-      if (r.low! < (_configService.appSettings.localSeqId ?? 0)) {
-        if (r.hi == null || r.hi! < (_configService.appSettings.localSeqId ?? 0)) {
+      if (r.low! < _configService.appSettings.localSeqId) {
+        if (r.hi == null || r.hi! < _configService.appSettings.localSeqId) {
           toSend.add(r);
         } else {
           // Clip hi to max allowed value.
@@ -1041,7 +1041,7 @@ class Topic {
     // The messages are iterated by seq ID in ascending order.
     _messages.forEach((data, i) {
       // Do not create a gap between the last sent message and the first unsent.
-      if (data.seq! >= _configService.appSettings.localSeqId!) {
+      if (data.seq! >= _configService.appSettings.localSeqId) {
         return;
       }
 

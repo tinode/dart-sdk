@@ -83,8 +83,9 @@ class TinodeService {
 
     onCtrlMessage.add(ctrl);
 
-    if (ctrl.id != null && ctrl.id != '') {
-      _futureManager.execFuture(ctrl.id, ctrl.code, ctrl, ctrl.text);
+    var code = ctrl.code;
+    if (ctrl.id != null && ctrl.id != '' && code != null) {
+      _futureManager.execFuture(ctrl.id, code, ctrl, ctrl.text);
     }
 
     if (ctrl.code == 205 && ctrl.text == 'evicted') {
@@ -432,7 +433,7 @@ class TinodeService {
 
   /// Notify server that a message or messages were read or received. Does NOT return promise
   Future note(String topicName, String what, int seq) {
-    if (seq <= 0 || seq >= (_configService.appSettings.localSeqId ?? 0)) {
+    if (seq <= 0 || seq >= _configService.appSettings.localSeqId) {
       throw Exception('Invalid message id ' + seq.toString());
     }
 
