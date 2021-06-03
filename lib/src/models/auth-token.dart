@@ -9,11 +9,14 @@ class AuthToken {
 }
 
 class OnLoginData {
-  final int? code;
-  final String? text;
+  /// Response code
+  final int code;
 
-  OnLoginData({
+  /// Response text
+  final String text;
+
+  OnLoginData(
     this.code,
     this.text,
-  });
+  );
 }

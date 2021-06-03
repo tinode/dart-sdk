@@ -1,6 +1,7 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:tinode/src/models/auth-token.dart';
+
 import 'package:tinode/src/models/server-messages.dart';
+import 'package:tinode/src/models/auth-token.dart';
 
 class AuthService {
   String? _userId;
@@ -57,6 +58,10 @@ class AuthService {
       _authToken = null;
     }
 
-    onLogin.add(OnLoginData(code: ctrl.code, text: ctrl.text));
+    var code = ctrl.code;
+    var text = ctrl.text;
+    if (code != null && text != null) {
+      onLogin.add(OnLoginData(code, text));
+    }
   }
 }
