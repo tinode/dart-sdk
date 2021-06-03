@@ -13,7 +13,7 @@ void main() {
   });
 
   test('setAuthToken() should set auth token', () {
-    service.setAuthToken(AuthToken(token: 'token', expires: DateTime.now()));
+    service.setAuthToken(AuthToken('token', DateTime.now()));
     expect(service.authToken?.token, equals('token'));
   });
 

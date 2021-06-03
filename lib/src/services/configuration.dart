@@ -13,7 +13,7 @@ class ConfigService {
   String appName = '';
 
   ConfigService(bool loggerEnabled) {
-    _appSettings = AppSettings(0xFFFFFFF, 418, 503, 'Connection failed', 'Disconnected by client', 1000, 5000);
+    _appSettings = AppSettings(0xFFFFFFF, 503, 1000, 5000);
     deviceToken = null;
     appVersion = '1.0.0-alpha';
     humanLanguage = 'en-US';

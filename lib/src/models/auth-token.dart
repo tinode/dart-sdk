@@ -1,11 +1,11 @@
 class AuthToken {
-  final String? token;
-  final DateTime? expires;
+  /// Authentication token
+  final String token;
 
-  AuthToken({
-    this.token,
-    this.expires,
-  });
+  /// Expire date of authentication token
+  final DateTime expires;
+
+  AuthToken(this.token, this.expires);
 }
 
 class OnLoginData {
