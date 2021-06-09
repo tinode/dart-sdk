@@ -231,7 +231,7 @@ class TinodeService {
   }
 
   /// Authenticate current session
-  Future login(String scheme, String secret, Map<String, dynamic>? cred) async {
+  Future<CtrlMessage> login(String scheme, String secret, Map<String, dynamic>? cred) async {
     var packet = _packetGenerator.generate(packet_types.Login, null);
     var data = packet.data as LoginPacketData;
     data.scheme = scheme;
@@ -240,7 +240,7 @@ class TinodeService {
 
     packet.data = data;
 
-    var ctrl = await _send(packet);
+    CtrlMessage ctrl = await _send(packet);
     _authService.onLoginSuccessful(ctrl);
     return ctrl;
   }

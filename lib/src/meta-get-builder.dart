@@ -16,7 +16,7 @@ class MetaGetBuilder {
   late LoggerService _loggerService;
 
   late Topic topic;
-  late TopicSubscription contact;
+  TopicSubscription? contact;
   Map<String, dynamic> what = {};
 
   MetaGetBuilder(Topic parent) {
@@ -25,12 +25,17 @@ class MetaGetBuilder {
 
     topic = parent;
     var me = _tinodeService.getTopic(topic_names.TOPIC_ME) as TopicMe?;
-    contact = (me != null ? me.getContact(parent.name!) : null)!;
+
+    if (me != null) {
+      if (parent.name != null) {
+        contact = me.getContact(parent.name!);
+      }
+    }
   }
 
   /// Get latest timestamp
   DateTime _getIms() {
-    var cupd = contact != null ? contact.updated : null;
+    var cupd = contact != null ? contact?.updated : null;
     var tupd = topic.lastDescUpdate;
     return tupd.isAfter(cupd!) ? cupd : tupd;
   }
@@ -43,6 +48,10 @@ class MetaGetBuilder {
 
   /// Add query parameters to fetch messages newer than the latest saved message
   MetaGetBuilder withLaterData(int? limit) {
+    if (topic.maxSeq <= 0) {
+      return this;
+    }
+
     return withData((topic.maxSeq > 0 ? topic.maxSeq + 1 : null)!, null, limit);
   }
 

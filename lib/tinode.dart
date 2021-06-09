@@ -227,7 +227,6 @@ class Tinode {
 
   /// Open the connection and send a hello packet to server
   Future connect() async {
-    _unsubscribeAll();
     _doSubscriptions();
     await _connectionService.connect();
     return hello();
@@ -320,12 +319,12 @@ class Tinode {
   }
 
   /// Authenticate current session
-  Future login(String scheme, String secret, Map<String, dynamic>? cred) {
+  Future<CtrlMessage> login(String scheme, String secret, Map<String, dynamic>? cred) {
     return _tinodeService.login(scheme, secret, cred);
   }
 
   /// Wrapper for `login` with basic authentication
-  Future loginBasic(String username, String password, Map<String, dynamic>? cred) async {
+  Future<CtrlMessage> loginBasic(String username, String password, Map<String, dynamic>? cred) async {
     var secret = base64.encode(utf8.encode(username + ':' + password));
     var ctrl = await login('basic', secret, cred);
     _authService.setLastLogin(username);

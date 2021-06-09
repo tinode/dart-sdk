@@ -33,7 +33,7 @@ class Topic {
   String? name;
 
   /// Timestamp when the topic was created
-  late DateTime created;
+  DateTime? created;
 
   /// Timestamp when the topic was last updated
   late DateTime updated;
@@ -80,28 +80,28 @@ class Topic {
   late DateTime _lastDescUpdate;
 
   /// Last topic subscribers update timestamp
-  late DateTime _lastSubsUpdate;
+  DateTime? _lastSubsUpdate;
 
   /// Topic created but not yet synced with the server. Used only during initialization.
   bool _new = true;
 
   /// in case some messages were deleted, the greatest ID
   /// of a deleted message, optional
-  late int clear;
+  int? clear;
 
   /// topic's default access permissions; present only if the current user has 'S' permission
-  late DefAcs defacs;
+  DefAcs? defacs;
 
   /// Id of the message user claims through {note} message to have read, optional
-  late int read;
+  int? read;
 
   /// Like 'read', but received, optional
-  late int recv;
+  int? recv;
 
   /// account status; included for `me` topic only, and only if
   /// the request is sent by a root-authenticated session.
-  late String status;
-  late int seq;
+  String? status;
+  int? seq;
 
   /// Authentication service, responsible for managing credentials and user id
   late AuthService _authService;
@@ -181,11 +181,11 @@ class Topic {
     var meta = response is MetaMessage ? response : null;
 
     if (meta != null) {
-      return Future.value(null);
+      return Future.value(CtrlMessage());
     }
 
     if (ctrl == null) {
-      return Future.value(null);
+      return Future.value(CtrlMessage());
     }
 
     if (ctrl.code! >= 300) {
@@ -259,7 +259,7 @@ class Topic {
       _loggerService.warn(e.toString());
       message.setStatus(message_status.FAILED);
       onData.add(null);
-      return Future.value(null);
+      return Future.value(CtrlMessage());
     }
   }
 
@@ -548,8 +548,8 @@ class Topic {
   /// Send a 'read' receipt. Wrapper for Tinode.noteRead
   void noteRead(int? seq) {
     this.seq = seq ?? _maxSeq;
-    if (this.seq > 0) {
-      _note('read', this.seq);
+    if (this.seq! > 0) {
+      _note('read', this.seq!);
     }
   }
 
@@ -638,7 +638,7 @@ class Topic {
   /// newer check for newer messages
   bool msgHasMoreMessages(bool newer) {
     return newer
-        ? seq > _maxSeq
+        ? seq! > _maxSeq
         :
         // _minSeq could be more than 1, but earlier messages could have been deleted.
         (_minSeq > 1 && !_noEarlierMsgs);
@@ -672,7 +672,7 @@ class Topic {
   }
 
   /// Get topic's default access mode
-  DefAcs getDefaultAccess() {
+  DefAcs? getDefaultAccess() {
     return defacs;
   }
 
@@ -930,7 +930,10 @@ class Topic {
   /// Delete cached messages and update cached transaction IDs
   void processDelMessages(int clear, List<DeleteTransactionRange> delseq) {
     _maxDel = max(clear, _maxDel);
-    this.clear = max(clear, this.clear);
+
+    if (this.clear != null) {
+      this.clear = max(clear, this.clear!);
+    }
 
     var count = 0;
     for (var range in delseq) {
@@ -1070,7 +1073,7 @@ class Topic {
     // Check for missing messages at the end.
     // All messages could be missing or it could be a new topic with no messages.
     var last = _messages.length > 0 ? _messages.getLast() : null;
-    var maxSeq = max(seq, _maxSeq);
+    var maxSeq = max(seq!, _maxSeq);
     if ((maxSeq > 0 && last == null) || (last != null && (((last.hi != null && last.hi! > 0) ? last.hi : last.seq)! < maxSeq))) {
       if (last != null && (last.hi != null && last.hi! > 0)) {
         // Extend existing gap
@@ -1091,7 +1094,7 @@ class Topic {
     return _lastDescUpdate;
   }
 
-  DateTime get lastSubsUpdate {
+  DateTime? get lastSubsUpdate {
     return _lastSubsUpdate;
   }
 

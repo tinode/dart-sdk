@@ -15,7 +15,7 @@ class ConfigService {
   ConfigService(bool loggerEnabled) {
     _appSettings = AppSettings(0xFFFFFFF, 503, 1000, 5000);
     deviceToken = null;
-    appVersion = '1.0.0-alpha';
+    appVersion = '1.0.0-alpha.2';
     humanLanguage = 'en-US';
     this.loggerEnabled = loggerEnabled;
   }
