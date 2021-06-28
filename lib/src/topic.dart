@@ -45,10 +45,10 @@ class Topic {
   AccessMode acs = AccessMode(null);
 
   /// Application-defined data that's available to the current user only
-  late dynamic private;
+  dynamic private;
 
   /// Application-defined data that's available to all topic subscribers
-  late dynamic public;
+  dynamic public;
 
   /// Locally cached data
   ///
@@ -317,8 +317,7 @@ class Topic {
     }
 
     // Send Set message, handle async response.
-    var response = await _tinodeService.setMeta(name ?? '', params);
-    var ctrl = CtrlMessage.fromMessage(response);
+    var ctrl = await _tinodeService.setMeta(name ?? '', params);
 
     if (ctrl.code! >= 300) {
       // Not modified

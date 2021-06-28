@@ -11,4 +11,11 @@ class DefAcs {
   static DefAcs fromMessage(Map<String, dynamic> msg) {
     return DefAcs(msg['auth'], msg['anon']);
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'auth': auth,
+      'anon': anon,
+    };
+  }
 }
