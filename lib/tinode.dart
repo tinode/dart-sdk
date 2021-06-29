@@ -120,14 +120,18 @@ class Tinode {
 
   /// Register services in dependency injection container
   void _registerDependencies(ConnectionOptions options, bool loggerEnabled) {
-    GetIt.I.registerSingleton<ConfigService>(ConfigService(loggerEnabled));
-    GetIt.I.registerSingleton<LoggerService>(LoggerService());
-    GetIt.I.registerSingleton<AuthService>(AuthService());
-    GetIt.I.registerSingleton<ConnectionService>(ConnectionService(options));
-    GetIt.I.registerSingleton<FutureManager>(FutureManager());
-    GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
-    GetIt.I.registerSingleton<CacheManager>(CacheManager());
-    GetIt.I.registerSingleton<TinodeService>(TinodeService());
+    var registered = GetIt.I.isRegistered<ConfigService>();
+
+    if (!registered) {
+      GetIt.I.registerSingleton<ConfigService>(ConfigService(loggerEnabled));
+      GetIt.I.registerSingleton<LoggerService>(LoggerService());
+      GetIt.I.registerSingleton<AuthService>(AuthService());
+      GetIt.I.registerSingleton<ConnectionService>(ConnectionService(options));
+      GetIt.I.registerSingleton<FutureManager>(FutureManager());
+      GetIt.I.registerSingleton<PacketGenerator>(PacketGenerator());
+      GetIt.I.registerSingleton<CacheManager>(CacheManager());
+      GetIt.I.registerSingleton<TinodeService>(TinodeService());
+    }
   }
 
   /// Resolve dependencies from container

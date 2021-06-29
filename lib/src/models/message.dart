@@ -14,7 +14,7 @@ class Message {
   DateTime? ts;
   String? from;
   bool? cancelled;
-  dynamic? content;
+  dynamic content;
   String? topicName;
   bool? noForwarding;
 
