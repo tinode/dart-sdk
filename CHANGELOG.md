@@ -1,3 +1,7 @@
+## 1.0.0-alpha.4
+
+- Prevent duplicate service registration
+
 ## 1.0.0-alpha.3
 
 - Topic set meta bug fixed 
