@@ -230,10 +230,10 @@ class Tinode {
   }
 
   /// Open the connection and send a hello packet to server
-  Future connect() async {
+  Future connect({String? deviceToken}) async {
     _doSubscriptions();
     await _connectionService.connect();
-    return hello();
+    return hello(deviceToken: deviceToken);
   }
 
   /// Close the current connection
@@ -365,7 +365,7 @@ class Tinode {
   }
 
   /// Create message draft without sending it to the server
-  Message createMessage(String topicName, dynamic data, bool echo) {
+  Message createMessage(String topicName, dynamic data, bool echo, {dynamic header}) {
     return _tinodeService.createMessage(topicName, data, echo);
   }
 

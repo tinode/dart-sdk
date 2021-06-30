@@ -17,12 +17,13 @@ class Message {
   dynamic content;
   String? topicName;
   bool? noForwarding;
+  Map<String, dynamic>? header;
 
   late PacketGenerator _packetGenerator;
 
   PublishSubject<int> onStatusChange = PublishSubject<int>();
 
-  Message(this.topicName, this.content, this.echo) {
+  Message(this.topicName, this.content, this.echo, {this.header}) {
     _status = message_status.NONE;
     _packetGenerator = GetIt.I.get<PacketGenerator>();
   }
@@ -31,6 +32,7 @@ class Message {
     var packet = _packetGenerator.generate(packet_types.Pub, topicName);
     var data = packet.data as PubPacketData;
     data.content = content;
+    if (header != null) data.head = header;
     data.noecho = !echo;
     packet.data = data;
     return packet;
@@ -52,6 +54,10 @@ class Message {
   void setStatus(int status) {
     _status = status;
     onStatusChange.add(status);
+  }
+
+  void setHead(Map<String, dynamic> headers) {
+    header = headers;
   }
 
   int? getStatus() {

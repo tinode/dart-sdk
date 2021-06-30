@@ -178,7 +178,8 @@ class TinodeService {
     var formattedPkt = pkt.toMap();
     formattedPkt['id'] = pkt.id;
     formattedPkt.keys
-        .where((k) => formattedPkt[k] == null || (formattedPkt[k] is Map && formattedPkt[k].isEmpty))
+        .where((k) =>
+    formattedPkt[k] == null || (formattedPkt[k] is Map && formattedPkt[k].isEmpty))
         .toList()
         .forEach(formattedPkt.remove);
 
@@ -321,9 +322,9 @@ class TinodeService {
   }
 
   /// Create message draft without sending it to the server
-  Message createMessage(String topicName, dynamic data, bool? echo) {
+  Message createMessage(String topicName, dynamic data, bool? echo, {dynamic header}) {
     echo ??= true;
-    return Message(topicName, data, echo);
+    return Message(topicName, data, echo, header: header);
   }
 
   /// Publish message to topic. The message should be created by `createMessage`
