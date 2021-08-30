@@ -236,7 +236,7 @@ class TinodeService {
     var data = packet.data as LoginPacketData;
     data.scheme = scheme;
     data.secret = secret;
-    data.cred = cred;
+    data.cred = [if (cred != null) cred];
 
     packet.data = data;
 

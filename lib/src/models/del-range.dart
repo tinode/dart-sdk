@@ -8,4 +8,12 @@ class DelRange {
     this.hi,
     this.all,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'low': low,
+      'hi': hi,
+      'all': all
+    };
+  }
 }
