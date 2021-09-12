@@ -137,9 +137,7 @@ class MetaGetBuilder {
     ['data', 'sub', 'desc', 'tags', 'cred', 'del'].forEach((key) {
       if (this.what.containsKey(key)) {
         what.add(key);
-        if (this.what[key].length > 0) {
-          params![key] = this.what[key];
-        }
+        params![key] = this.what[key];
       }
     });
     if (what.isNotEmpty) {

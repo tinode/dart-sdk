@@ -98,7 +98,8 @@ class TinodeService {
     if (ctrl.params != null && ctrl.params['what'] == 'data') {
       Topic? topic = _cacheManager.get('topic', ctrl.topic ?? '');
       if (topic != null) {
-        topic.allMessagesReceived(ctrl.params['count']);
+        var count = ctrl.params['count'];
+        topic.allMessagesReceived(count ?? 0);
       }
     }
 
