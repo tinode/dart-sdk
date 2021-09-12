@@ -91,7 +91,7 @@ class MetaMessage {
   MetaMessage({this.id, this.topic, this.ts, this.desc, this.sub, this.tags, this.cred, this.del});
 
   static MetaMessage fromMessage(Map<String, dynamic> msg) {
-    List<dynamic> sub = msg['sub'];
+    List<dynamic>? sub = msg['sub'];
 
     return MetaMessage(
       id: msg['id'],
