@@ -78,8 +78,8 @@ class TopicDescription {
   /// Create a new instance from received message
   static TopicDescription fromMessage(Map<String, dynamic> msg) {
     return TopicDescription(
-      created: msg['created'] != null ? DateTime.parse(msg['created']) : DateTime.now(),
-      updated: msg['updated'] != null ? DateTime.parse(msg['updated']) : DateTime.now(),
+      created: msg['created'] != null ? DateTime.tryParse(msg['created']) : DateTime.now(),
+      updated: msg['updated'] != null ? DateTime.tryParse(msg['updated']) : DateTime.now(),
       acs: msg['acs'] != null ? AccessMode(msg['acs']) : null,
       public: msg['public'],
       private: msg['private'],
@@ -90,7 +90,7 @@ class TopicDescription {
       recv: msg['recv'],
       clear: msg['clear'],
       noForwarding: msg['noForwarding'],
-      touched: msg['touched'],
+      touched: DateTime.tryParse(msg['touched']),
     );
   }
 }

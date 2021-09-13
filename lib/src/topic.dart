@@ -236,7 +236,7 @@ class Topic {
   }
 
   /// Publish message created by Topic.createMessage.
-  Future<CtrlMessage> publishMessage(Message message) async {
+  Future<CtrlMessage?> publishMessage(Message message) async {
     if (!isSubscribed) {
       return Future.error(Exception('Cannot publish on inactive topic'));
     }
@@ -245,14 +245,20 @@ class Topic {
 
     try {
       var response = await _tinodeService.publishMessage(message);
-      var ctrl = CtrlMessage.fromMessage(response);
-
-      message.ts = ctrl.ts;
-      var seq = ctrl.params['seq'];
-      if (seq != null) {
-        message.setStatus(message_status.SENT);
+      CtrlMessage? ctrl;
+      if (response is CtrlMessage) {
+        ctrl = response;
+      } else if (response is Map<String, dynamic>) {
+        ctrl = CtrlMessage.fromMessage(response);
       }
-      routeData(message.asDataMessage(_authService.userId ?? '', seq));
+      if (ctrl != null) {
+        message.ts = ctrl.ts;
+        var seq = ctrl.params['seq'];
+        if (seq != null) {
+          message.setStatus(message_status.SENT);
+        }
+        routeData(message.asDataMessage(_authService.userId ?? '', seq));
+      }
       return ctrl;
     } catch (e) {
       _loggerService.warn('Message rejected by the server');
