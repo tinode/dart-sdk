@@ -99,9 +99,9 @@ class MetaMessage {
       ts: msg['ts'],
       desc: msg['desc'] != null ? TopicDescription.fromMessage(msg['desc']) : null,
       sub: sub != null && sub.length != null ? sub.map((sub) => TopicSubscription.fromMessage(sub)).toList() : [],
-      tags: msg['tags'],
-      cred: msg['cred'] != null && msg['cred'].length != null
-          ? msg['cred'].map((Map<String, dynamic> cred) => Credential.fromMessage(cred)).toList()
+      tags: msg['tags']?.cast<String>(),
+      cred: msg['cred'] != null && msg['cred'].length > 0
+          ? msg['cred'].map((dynamic cred) => Credential.fromMessage(cred)).toList().cast<Credential>()
           : [],
       del: msg['del'] != null ? DeleteTransaction.fromMessage(msg['del']) : null,
     );

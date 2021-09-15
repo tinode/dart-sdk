@@ -48,8 +48,17 @@ class SortedCache<T> {
   /// Insert element into a sorted array
   List<T> insertSorted(T element, List<T> array) {
     var found = findNearest(element, array, false);
-    var count = (found['exact'] == true && unique) ? 1 : found['idx'];
-    array.replaceRange(found['idx'], count, [element]);
+    final int idx = found['idx'];
+    if (idx >= 0 && idx <= array.length) {
+      if (idx < array.length && found['exact'] == true && unique) {
+        // replace element
+        array[idx] = element;
+      } else {
+        array.insert(idx, element);
+      }
+    } else {
+      array.add(element);
+    }
     return array;
   }
 
