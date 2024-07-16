@@ -59,6 +59,7 @@ class GetDataType {
 }
 
 class GetQuery {
+  String? topic;
   bool? cred;
   bool? tags;
   String? what;
@@ -68,6 +69,7 @@ class GetQuery {
   GetDataType? del;
 
   GetQuery({
+    this.topic,
     this.desc,
     this.sub,
     this.data,
@@ -79,6 +81,7 @@ class GetQuery {
 
   static GetQuery fromMessage(Map<String, dynamic> msg) {
     return GetQuery(
+      topic: msg['topic'],
       cred: msg['cred'],
       what: msg['what'],
       data: msg['data'] != null ? GetDataType.fromMessage(msg['data']) : null,
@@ -91,6 +94,7 @@ class GetQuery {
 
   Map<String, dynamic> toMap() {
     var map = {
+      'topic':topic,
       'cred': cred,
       'what': what,
       'data': data != null ? data?.toMap() : null,
