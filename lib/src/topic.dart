@@ -705,8 +705,13 @@ class Topic {
   /// Process data message
   void routeData(DataMessage data) {
     if (data.content != null) {
-      if (touched!.isBefore(data.ts!)) {
-        touched = data.ts;
+      if (touched == null) {
+        touched=data.ts;
+      }
+      else{
+        if (touched!.isBefore(data.ts!)) {
+          touched = data.ts;
+        }
       }
     }
 
