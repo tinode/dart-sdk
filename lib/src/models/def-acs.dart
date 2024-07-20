@@ -8,6 +8,14 @@ class DefAcs {
 
   DefAcs(this.auth, this.anon);
 
+    Map<String, dynamic> toJson() {
+    return {
+      'auth': auth,
+      'anon': anon,
+    };
+  }
+
+
   static DefAcs fromMessage(Map<String, dynamic> msg) {
     return DefAcs(msg['auth'], msg['anon']);
   }

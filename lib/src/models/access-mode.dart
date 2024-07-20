@@ -72,7 +72,16 @@ class AccessMode {
         mode = _given & _want;
       }
     }
+    
   }
+     Map<String, dynamic> toJson() {
+    return {
+      'given': encode(_given),
+      'want': encode(_want),
+      'mode': encode(mode),
+    };
+  }
+
 
   /// Decodes string access mode to integer
   static int? decode(dynamic mode) {
