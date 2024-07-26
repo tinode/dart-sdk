@@ -245,8 +245,8 @@ class Topic {
 
     try {
       var response = await _tinodeService.publishMessage(message);
-      var ctrl = CtrlMessage.fromMessage(response);
-
+      //var ctrl = CtrlMessage.fromMessage(response);
+      var ctrl = response;
       message.ts = ctrl.ts;
       var seq = ctrl.params['seq'];
       if (seq != null) {
@@ -705,8 +705,13 @@ class Topic {
   /// Process data message
   void routeData(DataMessage data) {
     if (data.content != null) {
-      if (touched!.isBefore(data.ts!)) {
-        touched = data.ts;
+      if (touched == null) {
+        touched=data.ts;
+      }
+      else{
+        if (touched!.isBefore(data.ts!)) {
+          touched = data.ts;
+        }
       }
     }
 

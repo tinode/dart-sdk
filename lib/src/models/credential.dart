@@ -25,4 +25,15 @@ class Credential {
       done: msg['done'],
     );
   }
+
+    Map<String, dynamic> toJson() {
+    return {
+      'meth': meth,
+      'val': val,
+      'resp': resp,
+      'done': done,
+      'params': params,
+    };
+  }
+
 }

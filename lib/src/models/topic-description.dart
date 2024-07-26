@@ -58,6 +58,24 @@ class TopicDescription {
     this.touched,
   });
 
+    Map<String, dynamic> toJson() {
+    return {
+      'created': created?.toIso8601String(),
+      'updated': updated?.toIso8601String(),
+      'touched': touched?.toIso8601String(),
+      'status': status,
+      'defacs': defacs?.toJson(),
+      'acs': acs?.jsonHelper(),
+      'seq': seq,
+      'read': read,
+      'recv': recv,
+      'clear': clear,
+      'public': public,
+      'private': private,
+    };
+  }
+
+
   /// Create a new instance from received message
   static TopicDescription fromMessage(Map<String, dynamic> msg) {
     return TopicDescription(

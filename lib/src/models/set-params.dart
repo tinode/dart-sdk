@@ -9,4 +9,14 @@ class SetParams {
   Credential? cred;
 
   SetParams({this.desc, this.sub, this.tags, this.cred});
+
+    Map<String, dynamic> toJson(){
+    return{
+      'desc' : desc?.toJson(),
+      'sub': sub?.toJson(),
+      'tags' : tags,
+      'cred': cred?.toJson(),
+    };
+  }
+
 }

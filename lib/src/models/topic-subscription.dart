@@ -17,6 +17,15 @@ class Seen {
       when: msg['when'] != null ? DateTime.parse(msg['when']) : DateTime.now(),
     );
   }
+
+
+  Map<String, dynamic> toJson() {
+    return {
+      'when': when?.toIso8601String(),
+      'ua': ua,
+    };
+  }
+
 }
 
 /// Topic subscriber
@@ -103,7 +112,33 @@ class TopicSubscription {
     this.created,
     this.mode,
     this.unread,
-  });
+  });   
+  
+  
+  Map<String, dynamic> toJson() {
+    return {
+      'user': user,
+      'updated': updated?.toIso8601String(),
+      'touched': touched?.toIso8601String(),
+      'deleted': deleted?.toIso8601String(),
+      'created': created?.toIso8601String(),
+      'acs': acs?.toJson(),
+      'read': read,
+      'recv': recv,
+      'clear': clear,
+      'public': public,
+      'private': private,
+      'online': online,
+      'topic': topic,
+      'seq': seq,
+      'seen': seen?.toJson(),
+      'noForwarding': noForwarding,
+      'mode': mode,
+      'unread': unread,
+    };
+  }
+
+
 
   static TopicSubscription fromMessage(Map<String, dynamic> msg) {
     return TopicSubscription(
