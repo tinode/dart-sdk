@@ -245,8 +245,8 @@ class Topic {
 
     try {
       var response = await _tinodeService.publishMessage(message);
-      var ctrl = CtrlMessage.fromMessage(response);
-
+      //var ctrl = CtrlMessage.fromMessage(response);
+      var ctrl = response;
       message.ts = ctrl.ts;
       var seq = ctrl.params['seq'];
       if (seq != null) {
