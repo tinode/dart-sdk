@@ -205,7 +205,7 @@ class PresMessage {
 
   static PresMessage fromMessage(Map<String, dynamic> msg) {
     return PresMessage(
-      topic: msg['msg'],
+      topic: msg['topic'],
       src: msg['src'],
       what: msg['what'],
       seq: msg['seq'],
