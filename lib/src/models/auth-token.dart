@@ -1,12 +1,12 @@
 class AuthToken {
   /// Authentication token
   final String token;
-  final String url_encoded_token;
+  final String? url_encoded_token;
 
   /// Expire date of authentication token
   final DateTime expires;
 
-  AuthToken(this.token, this.url_encoded_token, this.expires);
+  AuthToken(this.token, this.expires, {this.url_encoded_token} );
 }
 
 class OnLoginData {

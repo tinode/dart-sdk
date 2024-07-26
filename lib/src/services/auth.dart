@@ -53,7 +53,7 @@ class AuthService {
     _authenticated = (ctrl.code ?? 0) >= 200 && (ctrl.code ?? 0) < 300;
 
     if (params['token'] != null && params['expires'] != null) {
-      _authToken =  AuthToken(params['token'], Uri.encodeComponent(params['token']), DateTime.parse(params['expires']));
+      _authToken =  AuthToken(params['token'],  DateTime.parse(params['expires']), url_encoded_token: Uri.encodeComponent(params['token']));
 
     } else {
       _authToken = null;
